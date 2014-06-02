@@ -1,0 +1,103 @@
+<!doctype html>
+<html>
+<head>
+  <link rel=stylesheet href="diffview.css">
+  <style>
+    td.before, td.after, td.skip {
+      width: 400px;
+      max-width: 400px;
+      min-width: 400px;
+    }
+  </style>
+</head>
+<body>
+<p>Here's a sample diff rendered with jsdifflib:</p>
+<div id="diffview">
+</div>
+
+<script src="difflib.js"></script>
+<script src="diffview.js"></script>
+<script type="text/javascript">
+function renderDiff(contentsBefore, contentsAfter) {
+  var diffDiv = document.getElementById("diffview");
+
+  // From https://github.com/cemerick/jsdifflib
+  var baseLines = difflib.stringAsLines(contentsBefore);
+  var afterLines = difflib.stringAsLines(contentsAfter);
+
+  // create a SequenceMatcher instance that diffs the two sets of lines
+  var sm = new difflib.SequenceMatcher(baseLines, afterLines);
+
+  // get the opcodes from the SequenceMatcher instance
+  // opcodes is a list of 3-tuples describing what changes should be made to the base text
+  // in order to yield the new text
+  var opcodes = sm.get_opcodes();
+
+  // build the diff view and add it to the current DOM
+  diffDiv.appendChild(diffview.buildView({
+      baseTextLines: baseLines,
+      newTextLines: afterLines,
+      opcodes: opcodes,
+      // set the display titles for each resource
+      baseTextName: "Before",
+      newTextName: "After",
+      contextSize: 3,
+      viewType: 0  // i.e. two column rather than inline.
+  }));
+}
+</script>
+<script type="notjavascript" id="before">Hello
+World
+
+How's it going?
+
+I'm going to delete this.
+
+Line A
+Line B
+Line C
+Line D
+Line E
+Line F
+Line G
+Line H
+Line I
+Line J
+Line K
+Line L
+Line M
+Line N
+Line O
+Line P
+</script>
+<script type="notjavascript" id="after">Hello
+Words
+
+How's it going?
+
+Line A
+Line B
+Line B2
+Line C
+Line D
+Line E
+Line F
+Line G
+Line H
+Line I
+Line J
+Line K
+Line L2
+Line M
+Line N
+Line O
+</script>
+
+<script type="text/javascript">
+var beforeText = document.getElementById("before").innerHTML;
+var afterText = document.getElementById("after").innerHTML;
+renderDiff(beforeText, afterText);
+</script>
+
+</body>
+</html>
