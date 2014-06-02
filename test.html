@@ -18,9 +18,7 @@
 <script src="difflib.js"></script>
 <script src="diffview.js"></script>
 <script type="text/javascript">
-function renderDiff(contentsBefore, contentsAfter) {
-  var diffDiv = document.getElementById("diffview");
-
+function renderDiff(diffDiv, contentsBefore, contentsAfter) {
   // From https://github.com/cemerick/jsdifflib
   var baseLines = difflib.stringAsLines(contentsBefore);
   var afterLines = difflib.stringAsLines(contentsAfter);
@@ -42,12 +40,14 @@ function renderDiff(contentsBefore, contentsAfter) {
       baseTextName: "Before",
       newTextName: "After",
       contextSize: 3,
-      viewType: 0  // i.e. two column rather than inline.
+      viewType: 0,  // i.e. two column rather than inline.
+      characterDiffs: true
   }));
 }
 </script>
 <script type="notjavascript" id="before">Hello
-World
+to the World of Tomorrow
+Here's a line with a change that's 'hard' to spot without character diffs.
 
 How's it going?
 
@@ -71,7 +71,8 @@ Line O
 Line P
 </script>
 <script type="notjavascript" id="after">Hello
-Words
+to the Words of Tomorrow
+Here's a line with a change that's "hard" to spot without character diffs.
 
 How's it going?
 
@@ -87,7 +88,7 @@ Line H
 Line I
 Line J
 Line K
-Line L2
+> Line L2
 Line M
 Line N
 Line O
@@ -96,7 +97,8 @@ Line O
 <script type="text/javascript">
 var beforeText = document.getElementById("before").innerHTML;
 var afterText = document.getElementById("after").innerHTML;
-renderDiff(beforeText, afterText);
+var diffDiv = document.getElementById("diffview");
+renderDiff(diffDiv, beforeText, afterText);
 </script>
 
 </body>
