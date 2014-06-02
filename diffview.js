@@ -52,6 +52,7 @@ diffview = {
 		var newTextName = params.newTextName ? params.newTextName : "New Text";
 		var contextSize = params.contextSize;
 		var inline = (params.viewType == 0 || params.viewType == 1) ? params.viewType : 0;
+		var characterDiffs = params.characterDiffs || false;
 
 		if (baseTextLines == null)
 			throw "Cannot build diff view; baseTextLines is not defined.";
@@ -123,6 +124,53 @@ diffview = {
 			row.appendChild(telt("th", tidx2 == null ? "" : (tidx2 + 1).toString()));
 			row.appendChild(ctelt("td", change, textLines[tidx != null ? tidx : tidx2].replace(/\t/g, "\u00a0\u00a0\u00a0\u00a0")));
 		}
+
+		function addCharacterDiffs(row) {
+			var tds = row.getElementsByTagName("td");
+			if (tds.length != 2) return;
+			var beforeTd = tds[0];
+			var afterTd = tds[1];
+			var beforeText = beforeTd.textContent;
+			var afterText = afterTd.textContent;
+			var sm = new difflib.SequenceMatcher(beforeText.split(''), afterText.split(''));
+			var opcodes = sm.get_opcodes();
+
+			var htmlEscape = function(text) {
+				var e = document.createElement('span');
+				e.appendChild(document.createTextNode(text));
+				return e.innerHTML;
+			};
+
+			var beforeHtml = '';
+			var afterHtml = '';
+			opcodes.forEach(function(opcode) {
+				var change = opcode[0];
+				var beforeIdx = opcode[1];
+				var beforeEnd = opcode[2];
+				var afterIdx = opcode[3];
+				var afterEnd = opcode[4];
+				var beforeOpHtml = htmlEscape(beforeText.substring(beforeIdx, beforeEnd));
+				var afterOpHtml = htmlEscape(afterText.substring(afterIdx, afterEnd));
+				if (change == 'equal') {
+					beforeHtml += beforeText.substring(beforeIdx, beforeEnd);
+					afterHtml += afterText.substring(afterIdx, afterEnd);
+				} else if (change == 'delete') {
+					beforeHtml += '<span class=char-delete>' + beforeOpHtml + '</span>';
+					// assert afterIdx == afterEnd
+				} else if (change == 'insert') {
+					// TODO(danvk): handle escaping
+					afterHtml += '<span class=char-insert>' + afterOpHtml + '</span>';
+					// assert beforeIdx == beforeEnd
+				} else if (change == 'replace') {
+					beforeHtml += '<span class=char-replace>' + beforeOpHtml + '</span>';
+					afterHtml += '<span class=char-replace>' + afterOpHtml + '</span>';
+				} else {
+					throw "Invalid opcode: " + opcode[0];
+				}
+			});
+			beforeTd.innerHTML = beforeHtml;
+			afterTd.innerHTML = afterHtml;
+		}
 		
 		for (var idx = 0; idx < opcodes.length; idx++) {
 			code = opcodes[idx];
@@ -175,6 +223,9 @@ diffview = {
 				} else {
 					b = addCells(node, b, be, baseTextLines, 'before line-' + (b+1) + ' ' + change);
 					n = addCells(node, n, ne, newTextLines, 'after line-' + (n+1) + ' ' + change);
+					if (change == "replace" && characterDiffs) {
+						addCharacterDiffs(node);
+					}
 				}
 			}
 

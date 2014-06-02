@@ -81,3 +81,11 @@ table.diff th.author {
 	border-top:1px solid #BBC;
 	background:#EFEFEF
 }
+
+table.diff .char-insert,
+table.diff .char-delete,
+table.diff .char-replace {
+	background-color: #EEC96D;
+	margin-top: -0.2em;
+	padding-top: 0.2em;
+}
