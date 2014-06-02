@@ -173,8 +173,8 @@ diffview = {
 						addCellsInline(node, b++, n++, baseTextLines, change);
 					}
 				} else {
-					b = addCells(node, b, be, baseTextLines, change);
-					n = addCells(node, n, ne, newTextLines, change);
+					b = addCells(node, b, be, baseTextLines, 'before line-' + (b+1) + ' ' + change);
+					n = addCells(node, n, ne, newTextLines, 'after line-' + (n+1) + ' ' + change);
 				}
 			}
 
