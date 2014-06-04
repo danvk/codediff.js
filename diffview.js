@@ -152,8 +152,8 @@ diffview = {
 				var beforeOpHtml = htmlEscape(beforeText.substring(beforeIdx, beforeEnd));
 				var afterOpHtml = htmlEscape(afterText.substring(afterIdx, afterEnd));
 				if (change == 'equal') {
-					beforeHtml += beforeText.substring(beforeIdx, beforeEnd);
-					afterHtml += afterText.substring(afterIdx, afterEnd);
+					beforeHtml += beforeOpHtml;
+					afterHtml += afterOpHtml;
 				} else if (change == 'delete') {
 					beforeHtml += '<span class=char-delete>' + beforeOpHtml + '</span>';
 					// assert afterIdx == afterEnd
