@@ -135,6 +135,18 @@ diffview = {
 			var sm = new difflib.SequenceMatcher(beforeText.split(''), afterText.split(''));
 			var opcodes = sm.get_opcodes();
 
+                        var minEqualFrac = 0.5;  // suppress character-by-character diffs if there's less than this much overlap.
+                        var equalCount = 0, charCount = 0;
+                        opcodes.forEach(function(opcode) {
+				var change = opcode[0];
+				var beforeLen = opcode[2] - opcode[1];
+				var afterLen = opcode[4] - opcode[3];
+                                var count = beforeLen + afterLen;
+                                if (change == 'equal') equalCount += count;
+                                charCount += count;
+                        });
+                        if (equalCount < minEqualFrac * charCount) return;
+
 			var htmlEscape = function(text) {
 				var e = document.createElement('span');
 				e.appendChild(document.createTextNode(text));
