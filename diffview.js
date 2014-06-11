@@ -59,7 +59,7 @@ diffview = {
 		if (newTextLines == null)
 			throw "Cannot build diff view; newTextLines is not defined.";
 		if (!opcodes)
-			throw "Canno build diff view; opcodes is not defined.";
+			throw "Cannot build diff view; opcodes is not defined.";
 		
 		function celt (name, clazz) {
 			var e = document.createElement(name);
@@ -135,17 +135,17 @@ diffview = {
 			var sm = new difflib.SequenceMatcher(beforeText.split(''), afterText.split(''));
 			var opcodes = sm.get_opcodes();
 
-                        var minEqualFrac = 0.5;  // suppress character-by-character diffs if there's less than this much overlap.
-                        var equalCount = 0, charCount = 0;
-                        opcodes.forEach(function(opcode) {
+			var minEqualFrac = 0.5;  // suppress character-by-character diffs if there's less than this much overlap.
+			var equalCount = 0, charCount = 0;
+			opcodes.forEach(function(opcode) {
 				var change = opcode[0];
 				var beforeLen = opcode[2] - opcode[1];
 				var afterLen = opcode[4] - opcode[3];
-                                var count = beforeLen + afterLen;
-                                if (change == 'equal') equalCount += count;
-                                charCount += count;
-                        });
-                        if (equalCount < minEqualFrac * charCount) return;
+				var count = beforeLen + afterLen;
+				if (change == 'equal') equalCount += count;
+				charCount += count;
+			});
+			if (equalCount < minEqualFrac * charCount) return;
 
 			var htmlEscape = function(text) {
 				var e = document.createElement('span');
@@ -198,8 +198,19 @@ diffview = {
 				// jump ahead if we've alredy provided leading context or if this is the first range
 				if (contextSize && opcodes.length > 1 && ((idx > 0 && i == contextSize) || (idx == 0 && i == 0)) && change=="equal") {
 					var jump = rowcnt - ((idx == 0 ? 1 : 2) * contextSize);
+					var isEnd = (idx + 1 == opcodes.length);
+					if (isEnd) {
+						jump += (contextSize - 1);
+					}
 					if (jump > 1) {
 						toprows.push(node = document.createElement("tr"));
+
+						var $skipEl = $('<td class=skip><a href="#">Show ' + jump + ' lines</a></td>');
+						$skipEl.data({
+							'beforeStartIndex': b,
+							'afterStartIndex': n,
+							'jumpLength': jump
+						});
 						
 						b += jump;
 						n += jump;
@@ -207,10 +218,14 @@ diffview = {
 						node.appendChild(telt("th", "..."));
 						if (!inline) node.appendChild(ctelt("td", "skip", ""));
 						node.appendChild(telt("th", "..."));
-						node.appendChild(ctelt("td", "skip", ""));
+						if (inline) {
+							node.appendChild(ctelt("td", "skip", ""));
+						} else {
+							$(node).append($skipEl);
+						}
 						
 						// skip last lines if they're all equal
-						if (idx + 1 == opcodes.length) {
+						if (isEnd) {
 							break;
 						} else {
 							continue;
@@ -255,6 +270,32 @@ diffview = {
 		
 		node = celt("table", "diff" + (inline ? " inlinediff" : ""));
 		for (var idx in tdata) tdata.hasOwnProperty(idx) && node.appendChild(tdata[idx]);
+
+		// Set up links to show more context.
+		if (!inline) {
+			$(node).data('params', params);
+			$(node).on('click', '.skip a', function(e) {
+				var skipData = $(this).closest('td.skip').data();
+				var params = $(this).closest('table').data('params');
+				var $skipRow = $(this).closest('tr');
+				var newRows = [];
+
+				// TODO(danvk): consolidate w/ above
+				var b = skipData.beforeStartIndex;
+				var n = skipData.afterStartIndex;
+				var be = b + jump, ne = n + jump;
+				var node;
+				var change = "equal";
+				for (var i = 0; i < skipData.jumpLength; i++) {
+					newRows.push(node = document.createElement("tr"));
+					b = addCells(node, b, be, params.baseTextLines, 'before line-' + (b+1) + ' ' + change);
+					n = addCells(node, n, ne, params.newTextLines, 'after line-' + (n+1) + ' ' + change);
+				}
+				$skipRow.after(newRows);
+				$skipRow.remove();
+			});
+		}
+
 		return node;
 	}
 };
