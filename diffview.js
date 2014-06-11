@@ -283,6 +283,7 @@ diffview = {
 				// TODO(danvk): consolidate w/ above
 				var b = skipData.beforeStartIndex;
 				var n = skipData.afterStartIndex;
+                                var jump = skipData.jumpLength;
 				var be = b + jump, ne = n + jump;
 				var node;
 				var change = "equal";
@@ -293,6 +294,7 @@ diffview = {
 				}
 				$skipRow.after(newRows);
 				$skipRow.remove();
+				e.preventDefault();
 			});
 		}
 
