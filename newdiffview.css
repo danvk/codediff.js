@@ -1,0 +1,33 @@
+.diff-line-no > div {
+  width: 5ch;
+  text-align: right;
+  background: #eed;
+  border: solid 1px #bbc;
+  border-top: none;
+  color: #886;
+}
+.diff-line-no > div:first-child {
+  border-top: solid 1px #bbc;
+}
+
+.diff-content {
+  width: 40ch;
+  overflow-x: auto;
+}
+
+.diff-content > div {
+  border-bottom: 1px solid white;
+}
+.diff-content > div:first-child {
+  border-top: 1px solid white;
+}
+
+.diff {
+  display: table;
+  white-space: nowrap;
+}
+
+.diff > div {
+  display: inline-block;
+  vertical-align: top;
+}

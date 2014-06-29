@@ -2,6 +2,7 @@
 <html>
 <head>
   <link rel=stylesheet href="diffview.css">
+  <link rel=stylesheet href="newdiffview.css">
   <style>
     td.before, td.after, td.skip {
       width: 400px;
@@ -17,7 +18,10 @@
 </div>
 
 <script src="difflib.js"></script>
+<!--
 <script src="diffview.js"></script>
+-->
+<script src="newdiffview.js"></script>
 <script type="text/javascript">
 function renderDiff(diffDiv, contentsBefore, contentsAfter) {
   // From https://github.com/cemerick/jsdifflib
@@ -33,17 +37,16 @@ function renderDiff(diffDiv, contentsBefore, contentsAfter) {
   var opcodes = sm.get_opcodes();
 
   // build the diff view and add it to the current DOM
-  diffDiv.appendChild(diffview.buildView({
-      baseTextLines: baseLines,
-      newTextLines: afterLines,
-      opcodes: opcodes,
-      // set the display titles for each resource
-      baseTextName: "Before",
-      newTextName: "After",
-      contextSize: 3,
-      viewType: 0,  // i.e. two column rather than inline.
-      characterDiffs: true
-  }));
+  // diffDiv.appendChild(diffview.buildView({
+  //     baseTextLines: baseLines,
+  //     newTextLines: afterLines,
+  //     opcodes: opcodes,
+  //     // set the display titles for each resource
+  //     baseTextName: "Before",
+  //     newTextName: "After",
+  //     contextSize: 3
+  // }));
+  diffDiv.appendChild(diffview.buildView(contentsBefore, contentsAfter, {}));
 }
 </script>
 <script type="notjavascript" id="before">Hello

@@ -1,0 +1,20 @@
+.diff-line-no {
+  width: 5ch;
+  text-align: right;
+  background: #eed;
+  border: solid 1px #bbc;
+  color: #886;
+}
+
+.diff-content {
+  width: 80ch;
+  overflow-x: auto;
+}
+
+.diff {
+  display: table;
+}
+
+.diff > div {
+  display: inline-block;
+}
