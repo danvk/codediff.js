@@ -4,6 +4,7 @@
 
 .diff-header {
   width: 45ch;
+  padding: 2px;
 }
 
 .diff-line-no > div {
