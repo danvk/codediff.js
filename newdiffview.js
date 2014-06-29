@@ -8,8 +8,8 @@ diffview.buildView = function(beforeText, afterText, userParams) {
 
   var defaultParams = {
     contextSize: 3,
-    baseTextName: "Before",
-    newTextName: "After"
+    beforeName: "Before",
+    afterName: "After"
   };
 
   var params = $.extend({}, defaultParams, userParams);
@@ -41,7 +41,7 @@ diffview.buildView = function(beforeText, afterText, userParams) {
       // Jump
       if (params.contextSize && opcodes.length > 1 && change == 'equal' &&
           ((opcodeIdx > 0 && i == params.contextSize) ||
-           (opcodeIdx == 0 && i == i == 0))) {
+           (opcodeIdx == 0 && i == 0))) {
         var jump = rowCount - ((opcodeIdx == 0 ? 1 : 2) * params.contextSize);
         var isEnd = (opcodeIdx + 1 == opcodes.length);
         if (isEnd) {
@@ -86,6 +86,12 @@ diffview.buildView = function(beforeText, afterText, userParams) {
   }
 
   var $container = $('<div class="diff">');
+
+  $container.append(
+      $('<div class=diff-header>').text(params.beforeName),
+      $('<div class=diff-header>').text(params.afterName),
+      $('<br>'));
+
   $container.append($leftLineDiv, $leftContent, $rightLineDiv, $rightContent);
 
   // TODO(danvk): append each element of rows to the appropriate div here.
@@ -103,15 +109,16 @@ diffview.buildView = function(beforeText, afterText, userParams) {
 
 function addCells(row, tidx, tend, textLines, change) {
   if (tidx < tend) {
+    var txt = textLines[tidx].replace(/\t/g, "\u00a0\u00a0\u00a0\u00a0");
     row.push($('<div>').text(tidx + 1).get(0));
     row.push($('<div>')
-        .addClass(change)
-        .text(textLines[tidx].replace(/\t/g, "\u00a0\u00a0\u00a0\u00a0"))
+        .addClass(change, 'code')
+        .text(txt)
         .get(0));
     return tidx + 1;
   } else {
-    row.push($('<div>&nbsp;</div>').get(0));
-    row.push($('<div class="empty">&nbsp;</div>').get(0));
+    row.push($('<div>').get(0));
+    row.push($('<div class="empty code">').get(0));
     return tidx;
   }
 }

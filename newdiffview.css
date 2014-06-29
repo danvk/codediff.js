@@ -1,13 +1,29 @@
+.diff {
+  box-sizing: border-box;
+}
+
+.diff-header {
+  width: 45ch;
+}
+
 .diff-line-no > div {
   width: 5ch;
   text-align: right;
-  background: #eed;
+  /*
   border: solid 1px #bbc;
   border-top: none;
-  color: #886;
+  */
 }
 .diff-line-no > div:first-child {
+  /*
   border-top: solid 1px #bbc;
+  */
+}
+
+.diff-line-no {
+  color: #999;
+  background-color: #f7f7f7;
+  border-right: 1px solid #ddd;
 }
 
 .diff-content {
@@ -16,18 +32,35 @@
 }
 
 .diff-content > div {
-  border-bottom: 1px solid white;
-}
-.diff-content > div:first-child {
-  border-top: 1px solid white;
+  min-height: 1em;
 }
 
 .diff {
   display: table;
   white-space: nowrap;
+  font-family: monospace;
 }
 
 .diff > div {
   display: inline-block;
   vertical-align: top;
+}
+
+.diff > div > div {
+  padding: 2px;
+  height: 1.11em;
+}
+
+.diff .delete {
+  background-color: #fdd;
+}
+.diff .insert {
+  background-color: #dfd;
+}
+
+.diff-left-content .replace {
+  background-color: #fee;
+}
+.diff-right-content .replace {
+  background-color: #efe;
 }
