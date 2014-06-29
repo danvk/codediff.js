@@ -53,10 +53,10 @@
 }
 
 .diff .delete {
-  background-color: #fdd;
+  background-color: #fcc;
 }
 .diff .insert {
-  background-color: #dfd;
+  background-color: #cfc;
 }
 
 .diff-left-content .replace {
@@ -64,4 +64,12 @@
 }
 .diff-right-content .replace {
   background-color: #efe;
+}
+
+.diff-left-content .char-replace, .diff-left-content .char-delete {
+  background-color: #fcc;
+}
+
+.diff-right-content .char-replace, .diff-right-content .char-insert {
+  background-color: #cfc;
 }

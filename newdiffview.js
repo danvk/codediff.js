@@ -17,7 +17,7 @@ diffview.buildView = function(beforeText, afterText, userParams) {
   var beforeLines = difflib.stringAsLines(beforeText);
   var afterLines = difflib.stringAsLines(afterText);
   var sm = new difflib.SequenceMatcher(beforeLines, afterLines);
-  var opcodes = sm.get_opcodes();
+  opcodes = sm.get_opcodes();
 
   var $leftLineDiv = $('<div class="diff-line-no diff-left-line-no">');
   var $leftContent = $('<div class="diff-content diff-left-content">');
@@ -79,6 +79,10 @@ diffview.buildView = function(beforeText, afterText, userParams) {
       topRows.push(els);
       beforeIdx = addCells(els, beforeIdx, beforeEnd, beforeLines, 'before line-' + (beforeIdx + 1) + ' ' + change);
       afterIdx = addCells(els, afterIdx, afterEnd, afterLines, 'after line-' + (afterIdx + 1) + ' ' + change);
+
+      if (change == 'replace') {
+        addCharacterDiffs(els[1], els[3]);
+      }
     }
 
     for (var i = 0; i < topRows.length; i++) rows.push(topRows[i]);
@@ -123,6 +127,49 @@ function addCells(row, tidx, tend, textLines, change) {
     row.push($('<div class="empty code">').get(0));
     return tidx;
   }
+}
+
+function addCharacterDiffs(beforeCell, afterCell) {
+  var beforeText = $(beforeCell).text(), afterText = $(afterCell).text();
+  var sm = new difflib.SequenceMatcher(beforeText.split(''), afterText.split(''));
+  var opcodes = sm.get_opcodes();
+  var minEqualFrac = 0.5;  // suppress character-by-character diffs if there's less than this much overlap.
+  var equalCount = 0, charCount = 0;
+  opcodes.forEach(function(opcode) {
+    var change = opcode[0];
+    var beforeLen = opcode[2] - opcode[1];
+    var afterLen = opcode[4] - opcode[3];
+    var count = beforeLen + afterLen;
+    if (change == 'equal') equalCount += count;
+    charCount += count;
+  });
+  if (equalCount < minEqualFrac * charCount) return;
+
+  var beforeEls = [], afterEls = [];
+  opcodes.forEach(function(opcode) {
+    var change = opcode[0];
+    var beforeIdx = opcode[1];
+    var beforeEnd = opcode[2];
+    var afterIdx = opcode[3];
+    var afterEnd = opcode[4];
+    var beforeSubstr = beforeText.substring(beforeIdx, beforeEnd);
+    var afterSubstr = afterText.substring(afterIdx, afterEnd);
+    if (change == 'equal') {
+      beforeEls.push(beforeSubstr);
+      afterEls.push(afterSubstr);
+    } else if (change == 'delete') {
+      beforeEls.push($('<span class=char-delete>').text(beforeSubstr));
+    } else if (change == 'insert') {
+      afterEls.push($('<span class=char-insert>').text(afterSubstr));
+    } else if (change == 'replace') {
+      beforeEls.push($('<span class=char-replace>').text(beforeSubstr));
+      afterEls.push($('<span class=char-replace>').text(afterSubstr));
+    } else {
+      throw "Invalid opcode: " + opcode[0];
+    }
+  });
+  $(beforeCell).empty().append(beforeEls);
+  $(afterCell).empty().append(afterEls);
 }
 
 return diffview;
