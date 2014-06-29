@@ -4,7 +4,6 @@
 
 .diff-header {
   width: 45ch;
-  padding: 2px;
 }
 
 .diff-line-no > div {
@@ -27,13 +26,19 @@
   border-right: 1px solid #ddd;
 }
 
-.diff-content {
-  width: 40ch;
+.diff-wrapper {
+  width: 45ch;
   overflow-x: auto;
 }
 
-.diff-content > div {
+.diff-content {
+  display: table;
+}
+
+.line-no, .code {
   min-height: 1em;
+  padding: 2px;
+  height: 1.11em;
 }
 
 .diff {
@@ -42,14 +47,9 @@
   font-family: monospace;
 }
 
-.diff > div {
+.diff-header, .diff-wrapper, .diff-wrapper > div {
   display: inline-block;
   vertical-align: top;
-}
-
-.diff > div > div {
-  padding: 2px;
-  height: 1.11em;
 }
 
 .diff .delete {

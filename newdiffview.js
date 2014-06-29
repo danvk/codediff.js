@@ -92,7 +92,9 @@ diffview.buildView = function(beforeText, afterText, userParams) {
       $('<div class=diff-header>').text(params.afterName),
       $('<br>'));
 
-  $container.append($leftLineDiv, $leftContent, $rightLineDiv, $rightContent);
+  $container.append(
+      $('<div class=diff-wrapper>').append($leftLineDiv, $leftContent),
+      $('<div class=diff-wrapper>').append($rightLineDiv, $rightContent));
 
   // TODO(danvk): append each element of rows to the appropriate div here.
   rows.forEach(function(row) {
@@ -110,14 +112,14 @@ diffview.buildView = function(beforeText, afterText, userParams) {
 function addCells(row, tidx, tend, textLines, change) {
   if (tidx < tend) {
     var txt = textLines[tidx].replace(/\t/g, "\u00a0\u00a0\u00a0\u00a0");
-    row.push($('<div>').text(tidx + 1).get(0));
+    row.push($('<div class=line-no>').text(tidx + 1).get(0));
     row.push($('<div>')
-        .addClass(change, 'code')
+        .addClass(change + ' code')
         .text(txt)
         .get(0));
     return tidx + 1;
   } else {
-    row.push($('<div>').get(0));
+    row.push($('<div class=line-no>').get(0));
     row.push($('<div class="empty code">').get(0));
     return tidx;
   }
