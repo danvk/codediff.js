@@ -150,7 +150,7 @@ differ.prototype.buildView_ = function() {
       afterIdx = addCells(els, afterIdx, afterEnd, this.params.syntaxHighlighting, afterLines, 'after line-' + (afterIdx + 1) + ' ' + change);
 
       if (change == 'replace') {
-        addCharacterDiffs(els[1], els[3]);
+        differ.addCharacterDiffs_(els[1], els[3], this.params.syntaxHighlighting);
       }
     }
 
@@ -207,8 +207,52 @@ function addCells(row, tidx, tend, isHtml, textLines, change) {
   }
 }
 
-function addCharacterDiffs(beforeCell, afterCell) {
-  var beforeText = $(beforeCell).text(), afterText = $(afterCell).text();
+differ.htmlTextMapper = function(text, html) {
+  this.text_ = text;
+  this.html_ = html;
+};
+
+// Get the substring of HTML corresponding to text.substr(start, len).
+// Leading markup is included with index 0, trailing with the last char.
+differ.htmlTextMapper.prototype.getHtmlSubstring = function(start, limit) {
+  var textIndex = 0, htmlIndex = 0;
+  var html = this.html_;
+  var advanceOne = function() {
+    // This won't work for <span data="<foo">, but hljs never does that.
+    if (html.charAt(htmlIndex) == '<') {
+      while (html.charAt(htmlIndex) != '>') {
+        htmlIndex += 1;
+      }
+      htmlIndex += 1;
+    }
+    htmlIndex += 1;
+    textIndex += 1;
+  };
+
+  while (textIndex < start) {
+    advanceOne();
+  }
+  var htmlStartIndex = htmlIndex;
+
+  // special case: trailing tags go with the last character.
+  var htmlEndIndex;
+  if (limit < this.text_.length || (limit <= start)) {
+    while (textIndex < limit) {
+      advanceOne();
+    }
+    htmlEndIndex = htmlIndex;
+  } else {
+    htmlEndIndex = html.length;
+  }
+
+  return html.substring(htmlStartIndex, htmlEndIndex);
+};
+
+differ.addCharacterDiffs_ = function(beforeCell, afterCell, preserveHtml) {
+  var beforeText = $(beforeCell).text(),
+      afterText = $(afterCell).text(),
+      beforeHtml = $(beforeCell).html(),
+      afterHtml = $(afterCell).html();
   var sm = new difflib.SequenceMatcher(beforeText.split(''), afterText.split(''));
   var opcodes = sm.get_opcodes();
   var minEqualFrac = 0.5;  // suppress character-by-character diffs if there's less than this much overlap.
@@ -223,6 +267,14 @@ function addCharacterDiffs(beforeCell, afterCell) {
   });
   if (equalCount < minEqualFrac * charCount) return;
 
+  var beforeSubstring = beforeText.substring.bind(beforeText),
+      afterSubstring = afterText.substring.bind(afterText);
+  if (preserveHtml) {
+    var m = differ.htmlTextMapper.prototype.getHtmlSubstring;
+    beforeSubstring = m.bind(new differ.htmlTextMapper(beforeText, beforeHtml));
+    afterSubstring = m.bind(new differ.htmlTextMapper(afterText, afterHtml));
+  }
+
   var beforeEls = [], afterEls = [];
   opcodes.forEach(function(opcode) {
     var change = opcode[0];
@@ -230,8 +282,8 @@ function addCharacterDiffs(beforeCell, afterCell) {
     var beforeEnd = opcode[2];
     var afterIdx = opcode[3];
     var afterEnd = opcode[4];
-    var beforeSubstr = beforeText.substring(beforeIdx, beforeEnd);
-    var afterSubstr = afterText.substring(afterIdx, afterEnd);
+    var beforeSubstr = beforeSubstring(beforeIdx, beforeEnd);
+    var afterSubstr = afterSubstring(afterIdx, afterEnd);
     if (change == 'equal') {
       beforeEls.push(beforeSubstr);
       afterEls.push(afterSubstr);
@@ -248,7 +300,7 @@ function addCharacterDiffs(beforeCell, afterCell) {
   });
   $(beforeCell).empty().append(beforeEls);
   $(afterCell).empty().append(afterEls);
-}
+};
 
 differ.buildView = function(beforeText, afterText, userParams) {
   var d = new differ(beforeText, afterText, userParams);
