@@ -110,6 +110,12 @@ diffview.buildView = function(beforeText, afterText, userParams) {
     $rightContent.append(row[3]);
   });
 
+  var $wrapperDivs = $container.find('.diff-wrapper');
+  $wrapperDivs.on('scroll', function(e) {
+    var otherDiv = $wrapperDivs.not(this).get(0);
+    otherDiv.scrollLeft = this.scrollLeft;
+  });
+
   return $container.get(0);
 };
 

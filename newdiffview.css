@@ -29,6 +29,7 @@
 .diff-wrapper {
   width: 45ch;
   overflow-x: auto;
+  overflow-y: hidden;  /* shouldn't happen, but we sometimes get a pixel. */
 }
 
 .diff-content {
@@ -36,7 +37,6 @@
 }
 
 .line-no, .code {
-  min-height: 1em;
   padding: 2px;
   height: 1.11em;
 }
