@@ -248,7 +248,7 @@ differ.htmlTextMapper.prototype.getHtmlSubstring = function(start, limit) {
   return html.substring(htmlStartIndex, htmlEndIndex);
 };
 
-differ.addCharacterDiffs_ = function(beforeCell, afterCell, preserveHtml) {
+differ.addCharacterDiffs_ = function(beforeCell, afterCell) {
   var beforeText = $(beforeCell).text(),
       afterText = $(afterCell).text(),
       beforeHtml = $(beforeCell).html(),
@@ -267,15 +267,11 @@ differ.addCharacterDiffs_ = function(beforeCell, afterCell, preserveHtml) {
   });
   if (equalCount < minEqualFrac * charCount) return;
 
-  var beforeSubstring = beforeText.substring.bind(beforeText),
-      afterSubstring = afterText.substring.bind(afterText);
-  if (preserveHtml) {
-    var m = differ.htmlTextMapper.prototype.getHtmlSubstring;
-    beforeSubstring = m.bind(new differ.htmlTextMapper(beforeText, beforeHtml));
-    afterSubstring = m.bind(new differ.htmlTextMapper(afterText, afterHtml));
-  }
+  var m = differ.htmlTextMapper.prototype.getHtmlSubstring;
+  var beforeSubstring = m.bind(new differ.htmlTextMapper(beforeText, beforeHtml));
+  var afterSubstring = m.bind(new differ.htmlTextMapper(afterText, afterHtml));
 
-  var beforeEls = [], afterEls = [];
+  var beforeOut = '', afterOut = '';
   opcodes.forEach(function(opcode) {
     var change = opcode[0];
     var beforeIdx = opcode[1];
@@ -285,21 +281,21 @@ differ.addCharacterDiffs_ = function(beforeCell, afterCell, preserveHtml) {
     var beforeSubstr = beforeSubstring(beforeIdx, beforeEnd);
     var afterSubstr = afterSubstring(afterIdx, afterEnd);
     if (change == 'equal') {
-      beforeEls.push(beforeSubstr);
-      afterEls.push(afterSubstr);
+      beforeOut += beforeSubstr;
+      afterOut += afterSubstr;
     } else if (change == 'delete') {
-      beforeEls.push($('<span class=char-delete>').text(beforeSubstr));
+      beforeOut += '<span class=char-delete>' + beforeSubstr + '</span>';
     } else if (change == 'insert') {
-      afterEls.push($('<span class=char-insert>').text(afterSubstr));
+      afterOut += '<span class=char-insert>' + afterSubstr + '</span>';
     } else if (change == 'replace') {
-      beforeEls.push($('<span class=char-replace>').text(beforeSubstr));
-      afterEls.push($('<span class=char-replace>').text(afterSubstr));
+      beforeOut += '<span class=char-delete>' + beforeSubstr + '</span>';
+      afterOut += '<span class=char-insert>' + afterSubstr + '</span>';
     } else {
       throw "Invalid opcode: " + opcode[0];
     }
   });
-  $(beforeCell).empty().append(beforeEls);
-  $(afterCell).empty().append(afterEls);
+  $(beforeCell).empty().html(beforeOut);
+  $(afterCell).empty().html(afterOut);
 };
 
 differ.buildView = function(beforeText, afterText, userParams) {
