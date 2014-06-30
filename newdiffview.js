@@ -1,10 +1,11 @@
 var diffview = (function() {
 
-var differ = function(beforeText, afterText, params) {
+var differ = function(beforeText, afterText, userParams) {
   if (!'beforeText' in userParams) throw "need beforeText";
   if (!'afterText' in userParams) throw "need afterText";
 
   var defaultParams = {
+    language: null,  // auto-detect
     contextSize: 3,
     syntaxHighlighting: false,
     beforeName: "Before",
@@ -15,15 +16,22 @@ var differ = function(beforeText, afterText, params) {
 
   this.beforeLines = difflib.stringAsLines(beforeText);
   this.afterLines = difflib.stringAsLines(afterText);
-  var sm = new difflib.SequenceMatcher(beforeLines, afterLines);
+  var sm = new difflib.SequenceMatcher(this.beforeLines, this.afterLines);
   this.opcodes = sm.get_opcodes();
 
-  if (params.syntaxHighlighting) {
-    this.beforeLinesHighlighted = this.highlightText_(beforeText);
-    this.afterLinesHighlighted = this.highlightText_(afterText);
+  if (this.params.syntaxHighlighting) {
+    var lang = this.params.language;
+    this.beforeLinesHighlighted = differ.highlightText_(beforeText, lang);
+    this.afterLinesHighlighted = differ.highlightText_(afterText, lang);
   }
 };
 
+/**
+ * @param {string} text Possibly multiline text containing spans that cross
+ *     line breaks.
+ * @return {Array.<string>} An array of individual lines, each of which has
+ *     entirely balanced <span> tags.
+ */
 differ.distributeSpans_ = function(text) {
   var lines = difflib.stringAsLines(text);
   var spanRe = /(<span[^>]*>)|(<\/span>)/;
@@ -61,28 +69,34 @@ differ.distributeSpans_ = function(text) {
 
 /**
  * @param {string} text The lines to highlight.
- * @return {Array.<string>} Lines marked up with syntax <span>s.
+ * @param {?string} opt_language Language to pass to highlight.js. If not
+ *     specified, then the language will be auto-detected.
+ * @return {Array.<string>} Lines marked up with syntax <span>s. The <span>
+ *     tags will be balanced within each line.
  */
-differ.highlightText_ = function(text) {
-  // Create an unattached DOM element to mark up.
-  var $wrapper = $('<div>').text(text);
-  hljs.highlightBlock($wrapper.get(0));
+differ.highlightText_ = function(text, opt_language) {
+  // TODO(danvk): look into suppressing highlighting if .relevance is low.
+  var html = hljs.highlight(opt_language, text, true).value;
 
   // Some of the <span>s might cross lines, which won't work for our diff
   // structure. We convert them to single-line only <spans> here.
+  return differ.distributeSpans_(html);
 }
 
-differ.buildView = function(beforeText, afterText, userParams) {
-
+differ.prototype.buildView_ = function() {
   var $leftLineDiv = $('<div class="diff-line-no diff-left-line-no">');
   var $leftContent = $('<div class="diff-content diff-left-content">');
   var $rightLineDiv = $('<div class="diff-line-no diff-right-line-no">');
   var $rightContent = $('<div class="diff-content diff-right-content">');
 
+  var beforeLines = this.params.syntaxHighlighting ? this.beforeLinesHighlighted : this.beforeLines;
+  var afterLines = this.params.syntaxHighlighting ? this.afterLinesHighlighted : this.afterLines;
+
+  var contextSize = this.params.contextSize;
   var rows = [];
 
-  for (var opcodeIdx = 0; opcodeIdx < opcodes.length; opcodeIdx++) {
-    var opcode = opcodes[opcodeIdx];
+  for (var opcodeIdx = 0; opcodeIdx < this.opcodes.length; opcodeIdx++) {
+    var opcode = this.opcodes[opcodeIdx];
     var change = opcode[0];  // "equal", "replace", "delete", "insert"
     var beforeIdx = opcode[1];
     var beforeEnd = opcode[2];
@@ -94,13 +108,13 @@ differ.buildView = function(beforeText, afterText, userParams) {
 
     for (var i = 0; i < rowCount; i++) {
       // Jump
-      if (params.contextSize && opcodes.length > 1 && change == 'equal' &&
-          ((opcodeIdx > 0 && i == params.contextSize) ||
+      if (contextSize && this.opcodes.length > 1 && change == 'equal' &&
+          ((opcodeIdx > 0 && i == contextSize) ||
            (opcodeIdx == 0 && i == 0))) {
-        var jump = rowCount - ((opcodeIdx == 0 ? 1 : 2) * params.contextSize);
-        var isEnd = (opcodeIdx + 1 == opcodes.length);
+        var jump = rowCount - ((opcodeIdx == 0 ? 1 : 2) * contextSize);
+        var isEnd = (opcodeIdx + 1 == this.opcodes.length);
         if (isEnd) {
-          jump += (params.contextSize - 1);
+          jump += (contextSize - 1);
         }
         if (jump > 1) {
           var els = [];
@@ -132,8 +146,8 @@ differ.buildView = function(beforeText, afterText, userParams) {
 
       var els = [];
       topRows.push(els);
-      beforeIdx = addCells(els, beforeIdx, beforeEnd, beforeLines, 'before line-' + (beforeIdx + 1) + ' ' + change);
-      afterIdx = addCells(els, afterIdx, afterEnd, afterLines, 'after line-' + (afterIdx + 1) + ' ' + change);
+      beforeIdx = addCells(els, beforeIdx, beforeEnd, this.params.syntaxHighlighting, beforeLines, 'before line-' + (beforeIdx + 1) + ' ' + change);
+      afterIdx = addCells(els, afterIdx, afterEnd, this.params.syntaxHighlighting, afterLines, 'after line-' + (afterIdx + 1) + ' ' + change);
 
       if (change == 'replace') {
         addCharacterDiffs(els[1], els[3]);
@@ -147,8 +161,8 @@ differ.buildView = function(beforeText, afterText, userParams) {
   var $container = $('<div class="diff">');
 
   $container.append(
-      $('<div class=diff-header>').text(params.beforeName),
-      $('<div class=diff-header>').text(params.afterName),
+      $('<div class=diff-header>').text(this.params.beforeName),
+      $('<div class=diff-header>').text(this.params.afterName),
       $('<br>'));
 
   $container.append(
@@ -174,14 +188,17 @@ differ.buildView = function(beforeText, afterText, userParams) {
   return $container.get(0);
 };
 
-function addCells(row, tidx, tend, textLines, change) {
+function addCells(row, tidx, tend, isHtml, textLines, change) {
   if (tidx < tend) {
     var txt = textLines[tidx].replace(/\t/g, "\u00a0\u00a0\u00a0\u00a0");
     row.push($('<div class=line-no>').text(tidx + 1).get(0));
-    row.push($('<div>')
-        .addClass(change + ' code')
-        .text(txt)
-        .get(0));
+    var $code = $('<div>').addClass(change + ' code');
+    if (isHtml) {
+      $code.html(txt);
+    } else {
+      $code.text(txt);
+    }
+    row.push($code.get(0));
     return tidx + 1;
   } else {
     row.push($('<div class=line-no>').get(0));
@@ -232,6 +249,11 @@ function addCharacterDiffs(beforeCell, afterCell) {
   $(beforeCell).empty().append(beforeEls);
   $(afterCell).empty().append(afterEls);
 }
+
+differ.buildView = function(beforeText, afterText, userParams) {
+  var d = new differ(beforeText, afterText, userParams);
+  return d.buildView_();
+};
 
 return differ;
 

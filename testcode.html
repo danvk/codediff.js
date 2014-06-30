@@ -6,7 +6,10 @@
 
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 
+  <!--
   <link rel="stylesheet" href="http://yandex.st/highlightjs/8.0/styles/default.min.css">
+  -->
+  <link rel="stylesheet" href="googlecode.css">
   <script src="http://yandex.st/highlightjs/8.0/highlight.min.js"></script>
 </head>
 <body>
@@ -21,7 +24,8 @@
 <script src="newdiffview.js"></script>
 <script type="text/javascript">
 function renderDiff(diffDiv, contentsBefore, contentsAfter) {
-  diffDiv.appendChild(diffview.buildView(contentsBefore, contentsAfter, {}));
+  diffDiv.appendChild(diffview.buildView(
+        contentsBefore, contentsAfter, { syntaxHighlighting: true, language: 'js' }));
 }
 </script>
 <script type="notjavascript" id="before">/**
