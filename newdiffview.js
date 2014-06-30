@@ -1,23 +1,78 @@
 var diffview = (function() {
 
-var diffview = {};
-
-diffview.buildView = function(beforeText, afterText, userParams) {
+var differ = function(beforeText, afterText, params) {
   if (!'beforeText' in userParams) throw "need beforeText";
   if (!'afterText' in userParams) throw "need afterText";
 
   var defaultParams = {
     contextSize: 3,
+    syntaxHighlighting: false,
     beforeName: "Before",
     afterName: "After"
   };
 
-  var params = $.extend({}, defaultParams, userParams);
+  this.params = $.extend({}, defaultParams, userParams);
 
-  var beforeLines = difflib.stringAsLines(beforeText);
-  var afterLines = difflib.stringAsLines(afterText);
+  this.beforeLines = difflib.stringAsLines(beforeText);
+  this.afterLines = difflib.stringAsLines(afterText);
   var sm = new difflib.SequenceMatcher(beforeLines, afterLines);
-  opcodes = sm.get_opcodes();
+  this.opcodes = sm.get_opcodes();
+
+  if (params.syntaxHighlighting) {
+    this.beforeLinesHighlighted = this.highlightText_(beforeText);
+    this.afterLinesHighlighted = this.highlightText_(afterText);
+  }
+};
+
+differ.distributeSpans_ = function(text) {
+  var lines = difflib.stringAsLines(text);
+  var spanRe = /(<span[^>]*>)|(<\/span>)/;
+
+  var outLines = [];
+  var liveSpans = [];
+  lines.forEach(function(line) {
+    var groups = line.split(spanRe);
+    var i = 0;
+    var outLine = liveSpans.join('');
+    while (i < groups.length) {
+      var g = groups[i];
+      if (g === undefined) {
+        // close span
+        outLine += groups[i + 1];
+        liveSpans.pop();
+        i += 2;
+      } else if (g.substr(0, 5) == '<span') {
+        // open span
+        i += 2;
+        outLine += g;
+        liveSpans.push(g);
+      } else {
+        // plain text
+        outLine += g;
+        i++;
+      }
+    }
+    liveSpans.forEach(function() { outLine += '</span>'; });
+    outLines.push(outLine);
+  });
+  if (liveSpans.length) throw "Unbalanced <span>s in " + text;
+  return outLines;
+};
+
+/**
+ * @param {string} text The lines to highlight.
+ * @return {Array.<string>} Lines marked up with syntax <span>s.
+ */
+differ.highlightText_ = function(text) {
+  // Create an unattached DOM element to mark up.
+  var $wrapper = $('<div>').text(text);
+  hljs.highlightBlock($wrapper.get(0));
+
+  // Some of the <span>s might cross lines, which won't work for our diff
+  // structure. We convert them to single-line only <spans> here.
+}
+
+differ.buildView = function(beforeText, afterText, userParams) {
 
   var $leftLineDiv = $('<div class="diff-line-no diff-left-line-no">');
   var $leftContent = $('<div class="diff-content diff-left-content">');
@@ -178,6 +233,6 @@ function addCharacterDiffs(beforeCell, afterCell) {
   $(afterCell).empty().append(afterEls);
 }
 
-return diffview;
+return differ;
 
 })();
