@@ -2,22 +2,17 @@
   box-sizing: border-box;
 }
 
+.diff-column-width {
+  width: 85ch;
+  max-width: 85ch;
+}
+
 .diff-header {
-  width: 45ch;
 }
 
 .diff-line-no > div {
   width: 5ch;
   text-align: right;
-  /*
-  border: solid 1px #bbc;
-  border-top: none;
-  */
-}
-.diff-line-no > div:first-child {
-  /*
-  border-top: solid 1px #bbc;
-  */
 }
 
 .diff-line-no {
@@ -27,7 +22,6 @@
 }
 
 .diff-wrapper {
-  width: 45ch;
   overflow-x: auto;
   overflow-y: hidden;  /* shouldn't happen, but we sometimes get a pixel. */
 }

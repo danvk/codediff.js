@@ -5,7 +5,6 @@ var differ = function(beforeText, afterText, userParams) {
   if (!'afterText' in userParams) throw "need afterText";
 
   var defaultParams = {
-    language: null,  // auto-detect
     contextSize: 3,
     syntaxHighlighting: false,
     beforeName: "Before",
@@ -76,7 +75,12 @@ differ.distributeSpans_ = function(text) {
  */
 differ.highlightText_ = function(text, opt_language) {
   // TODO(danvk): look into suppressing highlighting if .relevance is low.
-  var html = hljs.highlight(opt_language, text, true).value;
+  var html;
+  if (opt_language) {
+    html = hljs.highlight(opt_language, text, true).value;
+  } else {
+    html = hljs.highlightAuto(text).value;
+  }
 
   // Some of the <span>s might cross lines, which won't work for our diff
   // structure. We convert them to single-line only <spans> here.
@@ -161,13 +165,13 @@ differ.prototype.buildView_ = function() {
   var $container = $('<div class="diff">');
 
   $container.append(
-      $('<div class=diff-header>').text(this.params.beforeName),
-      $('<div class=diff-header>').text(this.params.afterName),
+      $('<div class="diff-header diff-column-width">').text(this.params.beforeName),
+      $('<div class="diff-header diff-column-width">').text(this.params.afterName),
       $('<br>'));
 
   $container.append(
-      $('<div class=diff-wrapper>').append($leftLineDiv, $leftContent),
-      $('<div class=diff-wrapper>').append($rightLineDiv, $rightContent));
+      $('<div class="diff-wrapper diff-column-width">').append($leftLineDiv, $leftContent),
+      $('<div class="diff-wrapper diff-column-width">').append($rightLineDiv, $rightContent));
 
   // TODO(danvk): append each element of rows to the appropriate div here.
   rows.forEach(function(row) {
