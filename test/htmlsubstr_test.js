@@ -60,3 +60,19 @@ QUnit.test('small html', function(assert) {
   assert.equal(map.getHtmlSubstring(1, 2), 'x</q>');
   assert.equal(map.getHtmlSubstring(2, 2), '');
 });
+
+QUnit.test('html with entities', function(assert) {
+  var html = 'x&lt;y';
+  var text = $('<div>').html(html).text();
+  var map = new diffview.htmlTextMapper(text, html);
+
+  assert.equal(map.getHtmlSubstring(0, 0), '');
+  assert.equal(map.getHtmlSubstring(0, 1), 'x');
+  assert.equal(map.getHtmlSubstring(0, 2), 'x&lt;');
+  assert.equal(map.getHtmlSubstring(0, 3), 'x&lt;y');
+  assert.equal(map.getHtmlSubstring(1, 1), '');
+  assert.equal(map.getHtmlSubstring(1, 2), '&lt;');
+  assert.equal(map.getHtmlSubstring(1, 3), '&lt;y');
+  assert.equal(map.getHtmlSubstring(2, 2), '');
+  assert.equal(map.getHtmlSubstring(2, 3), 'y');
+});
