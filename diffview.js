@@ -1,9 +1,6 @@
 var diffview = (function() {
 
 var differ = function(beforeText, afterText, userParams) {
-  if (!'beforeText' in userParams) throw "need beforeText";
-  if (!'afterText' in userParams) throw "need afterText";
-
   var defaultParams = {
     contextSize: 3,
     language: null,
