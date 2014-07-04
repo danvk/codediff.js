@@ -1,10 +1,10 @@
 {
-  "name": "jsdiff",
-  "version": "0.1.1",
-  "description": "JavaScript-based two-column diff",
+  "name": "codediff.js",
+  "version": "0.1.0",
+  "description": "JavaScript-based two-column diff with syntax highlighting",
   "repository": {
     "type": "git",
-    "url": "https://github.com/danvk/jsdiff.git"
+    "url": "https://github.com/danvk/codediff.js.git"
   },
   "dependencies": {
     "jquery": ">=2.0.0",
@@ -20,5 +20,6 @@
     "qunitjs": "^1.14.0"
   },
   "scripts": {
+    "test": "grunt travis"
   }
 }
