@@ -1,4 +1,6 @@
 # codediff.js
+[![Build Status](https://travis-ci.org/danvk/codediff.js.svg?branch=master)](https://travis-ci.org/danvk/codediff.js)
+
 codediff.js is a two-column JavaScript diff visualization with syntax highlighting and character-by-character differences.
 
 It was originally based on [jsdifflib](https://github.com/cemerick/jsdifflib), but has been rewritten almost entirely.
