@@ -5,7 +5,7 @@ QUnit.test('char diffs -- simple', function(assert) {
   var beforeText = $(before).text(),
       afterText = $(after).text();
 
-  diffview.addCharacterDiffs_(before, after);
+  codediff.addCharacterDiffs_(before, after);
   assert.equal($(before).text(), beforeText);
   assert.equal($(after).text(), afterText);
   assert.equal($(before).html(), "    return '' + date.getFullYear();");
@@ -19,7 +19,7 @@ QUnit.test('char diffs with trailing markup', function(assert) {
   var beforeText = $(before).text(),
       afterText = $(after).text();
 
-  diffview.addCharacterDiffs_(before, after, true);
+  codediff.addCharacterDiffs_(before, after, true);
   assert.equal($(before).text(), beforeText);
   assert.equal($(after).text(), afterText);
   assert.equal($(before).html(), "<q>''</q>");
@@ -33,7 +33,7 @@ QUnit.test('char diffs with markup', function(assert) {
   var beforeText = $(before).text(),
       afterText = $(after).text();
 
-  diffview.addCharacterDiffs_(before, after, true);
+  codediff.addCharacterDiffs_(before, after, true);
   assert.equal($(before).text(), beforeText);
   assert.equal($(after).text(), afterText);
   assert.equal($(before).html(), "    <kw>return</kw> <q>''</q> + date.getFullYear();");

@@ -1,4 +1,4 @@
-var diffview = (function() {
+var codediff = (function() {
 
 var differ = function(beforeText, afterText, userParams) {
   var defaultParams = {

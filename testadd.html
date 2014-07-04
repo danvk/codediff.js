@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
 <head>
-  <link rel=stylesheet href="diffview.css">
+  <link rel=stylesheet href="codediff.css">
 
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 
@@ -14,12 +14,12 @@
 </div>
 
 <script src="difflib.js"></script>
-<script src="diffview.js"></script>
+<script src="codediff.js"></script>
 
 <script type="text/javascript">
 function renderDiff(diffDiv, contentsBefore, contentsAfter) {
-  diffDiv.appendChild(diffview.buildView(
-        contentsBefore, contentsAfter, { syntaxHighlighting: true, language: 'js' }));
+  diffDiv.appendChild(codediff.buildView(
+        contentsBefore, contentsAfter, { language: 'js' }));
 }
 </script>
 
@@ -51,8 +51,8 @@ Dygraph.dateAxisFormatter = function(date, granularity) {
 </script>
 
 <script type="text/javascript">
-var afterText = document.getElementById("after").innerHTML;
-var diffDiv = document.getElementById("diffview");
+var afterText = $("#after").html();
+var diffDiv = $("#diffview").get(0);
 renderDiff(diffDiv, null, afterText);
 </script>
 

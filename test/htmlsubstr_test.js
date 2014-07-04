@@ -1,7 +1,7 @@
 QUnit.test('basic functionality', function(assert) {
   var html = 'foo<span>bar</span>baz';
   var text = $('<div>').html(html).text();
-  var map = new diffview.htmlTextMapper(text, html);
+  var map = new codediff.htmlTextMapper(text, html);
 
   assert.equal(map.getHtmlSubstring(0, 0), '');
   assert.equal(map.getHtmlSubstring(0, 1), 'f');
@@ -18,7 +18,7 @@ QUnit.test('basic functionality', function(assert) {
 QUnit.test('leading/trailing html', function(assert) {
   var html = '<p>foo<span>bar</span>baz</p>';
   var text = $('<div>').html(html).text();
-  var map = new diffview.htmlTextMapper(text, html);
+  var map = new codediff.htmlTextMapper(text, html);
 
   assert.equal(map.getHtmlSubstring(0, 0), '');
   assert.equal(map.getHtmlSubstring(0, 1), '<p>f');
@@ -35,7 +35,7 @@ QUnit.test('leading/trailing html', function(assert) {
 QUnit.test('leading/trailing html, fixed right', function(assert) {
   var html = '<p>foo<span>bar</span>baz</p>';
   var text = $('<div>').html(html).text();
-  var map = new diffview.htmlTextMapper(text, html);
+  var map = new codediff.htmlTextMapper(text, html);
 
   assert.equal(map.getHtmlSubstring(0, 9), '<p>foo<span>bar</span>baz</p>');
   assert.equal(map.getHtmlSubstring(1, 9),     'oo<span>bar</span>baz</p>');
@@ -52,7 +52,7 @@ QUnit.test('leading/trailing html, fixed right', function(assert) {
 QUnit.test('small html', function(assert) {
   var html = '<q>xx</q>';
   var text = $('<div>').html(html).text();
-  var map = new diffview.htmlTextMapper(text, html);
+  var map = new codediff.htmlTextMapper(text, html);
 
   assert.equal(map.getHtmlSubstring(0, 0), '');
   assert.equal(map.getHtmlSubstring(0, 1), '<q>x');
@@ -64,7 +64,7 @@ QUnit.test('small html', function(assert) {
 QUnit.test('html with entities', function(assert) {
   var html = 'x&lt;y';
   var text = $('<div>').html(html).text();
-  var map = new diffview.htmlTextMapper(text, html);
+  var map = new codediff.htmlTextMapper(text, html);
 
   assert.equal(map.getHtmlSubstring(0, 0), '');
   assert.equal(map.getHtmlSubstring(0, 1), 'x');
@@ -81,7 +81,7 @@ QUnit.test('consecutive tags', function(assert) {
   var html = '<a><b>xx</b></a>';
   var text = $('<div>').html(html).text();
   assert.equal(text.length, 2);
-  var map = new diffview.htmlTextMapper(text, html);
+  var map = new codediff.htmlTextMapper(text, html);
 
   assert.equal(map.getHtmlSubstring(0, 0), '');
   assert.equal(map.getHtmlSubstring(0, 1), '<a><b>x');
