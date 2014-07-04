@@ -76,3 +76,17 @@ QUnit.test('html with entities', function(assert) {
   assert.equal(map.getHtmlSubstring(2, 2), '');
   assert.equal(map.getHtmlSubstring(2, 3), 'y');
 });
+
+QUnit.test('consecutive tags', function(assert) {
+  var html = '<a><b>xx</b></a>';
+  var text = $('<div>').html(html).text();
+  assert.equal(text.length, 2);
+  var map = new diffview.htmlTextMapper(text, html);
+
+  assert.equal(map.getHtmlSubstring(0, 0), '');
+  assert.equal(map.getHtmlSubstring(0, 1), '<a><b>x');
+  assert.equal(map.getHtmlSubstring(0, 2), '<a><b>xx</b></a>');
+  assert.equal(map.getHtmlSubstring(1, 1), '');
+  assert.equal(map.getHtmlSubstring(1, 2), 'x</b></a>');
+  assert.equal(map.getHtmlSubstring(2, 2), '');
+});
