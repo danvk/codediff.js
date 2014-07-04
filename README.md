@@ -29,9 +29,28 @@ codediff.js is used by [webdiff](https://github.com/danvk/webdiff).
     <script type="text/javascript">
     $('#diffview').append(
         codediff.buildView(codeBefore, codeAfter, {
-            /*options*/
+            /* options -- see below */
         }));
     </script>
+
+## Options
+
+Here are possible keys you can pass through the options parameter:
+
+* `language`: Language to use for syntax highlighting. This parameter is passed through to highlight.js, which does the highlighting. Any value it will accept is fine. You can do `hljs.getLanguage(language)` to see if a language code is valid. A null value (the default) will disable syntax highlighting. Example values include "python" or "javascript". (default: _null_)
+* `beforeName`: Text to place above the left side of the diff.
+* `afterName`: Text to place above the right side of the diff.
+* `contextSize`: Minimum number of lines of context to show around each diff hunk. (default: _10_).
+
+Here's an example usage with a filled-out options parameter:
+
+    $('#diffview').append(
+        codediff.buildView(codeBefore, codeAfter, {
+            language: 'python',
+            beforeName: 'oldfilename.py',
+            afterName: 'newfilename.py',
+            contextSize: 8
+        }));
 
 ## Development
 
