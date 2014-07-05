@@ -382,22 +382,14 @@ differ.addCharacterDiffs_ = function(beforeCell, afterCell) {
     var beforeEnd = opcode[2];
     var afterIdx = opcode[3];
     var afterEnd = opcode[4];
-    // var beforeSubstr = beforeMapper.getHtmlSubstring(beforeIdx, beforeEnd);
-    // var afterSubstr = afterMapper.getHtmlSubstring(afterIdx, afterEnd);
     if (change == 'equal') {
       beforeOut.push([null, beforeIdx, beforeEnd]);
       afterOut.push([null, afterIdx, afterEnd]);
-      // beforeOut += beforeSubstr;
-      // afterOut += afterSubstr;
     } else if (change == 'delete') {
-      // beforeOut += '<span class=char-delete>' + beforeSubstr + '</span>';
       beforeOut.push(['delete', beforeIdx, beforeEnd]);
     } else if (change == 'insert') {
-      // afterOut += '<span class=char-insert>' + afterSubstr + '</span>';
       afterOut.push(['insert', afterIdx, afterEnd]);
     } else if (change == 'replace') {
-      // beforeOut += '<span class=char-delete>' + beforeSubstr + '</span>';
-      // afterOut += '<span class=char-insert>' + afterSubstr + '</span>';
       beforeOut.push(['delete', beforeIdx, beforeEnd]);
       afterOut.push(['insert', afterIdx, afterEnd]);
     } else {
@@ -411,6 +403,8 @@ differ.addCharacterDiffs_ = function(beforeCell, afterCell) {
   $(afterCell).empty().html(differ.codesToHtml_(afterMapper, afterOut));
 };
 
+// codes are (span class, start, end) triples.
+// This merges consecutive runs with the same class, which simplifies the HTML.
 differ.simplifyCodes_ = function(codes) {
   var newCodes = [];
   for (var i = 0; i < codes.length; i++) {
@@ -432,6 +426,8 @@ differ.simplifyCodes_ = function(codes) {
   return newCodes;
 };
 
+// codes are (span class, start, end) triples.
+// This wraps html[start..end] in appropriate <span>..</span>s.
 differ.codesToHtml_ = function(mapper, codes) {
   var html = '';
   for (var i = 0; i < codes.length; i++) {
