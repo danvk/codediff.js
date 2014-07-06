@@ -3,8 +3,7 @@
 }
 
 .diff-column-width {
-  width: 41ch;
-  max-width: 41ch;
+  width: 61ch;
 }
 
 .diff-header, .line-no-header {
@@ -19,7 +18,7 @@
 
 .line-no {
   color: #999;
-  /* background-color: #f7f7f7; */
+  background-color: #f7f7f7;
 }
 
 .diff-left .line-no {
