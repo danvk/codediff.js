@@ -10,10 +10,7 @@
 .diff-header, .line-no-header {
   font-weight: bold;
   border-bottom: 1px solid #ddd;
-  margin-bottom: -1px;
-  background-color: #f7f7f7;
   padding: 2px;
-  height: 1.11em;
 }
 
 .diff-line-no > div {
@@ -21,18 +18,13 @@
 }
 
 .diff-line-no {
-  color: #999;
-  background-color: #f7f7f7;
-  border-right: 1px solid #ddd;
   display: table;
 }
 
-.diff-line-no .line-no:first-child {
+.line-no {
+  color: #999;
   background-color: #f7f7f7;
-  border-bottom: 1px solid #ddd;
-  margin-bottom: -1px;
-  border-right: 1px solid #f7f7f7;
-  margin-right: -1px;
+  border-right: 1px solid #ddd;
 }
 
 .diff-line-no, .diff-wrapper {
