@@ -201,9 +201,9 @@ differ.prototype.buildView_ = function() {
             'jumpLength': jump,
           }).attr('line-no', 1 + afterIdx);
           
-          els.push($('<div class=line-no>...</div>').attr('line-no', 1+beforeIdx).get(0));
+          els.push($('<div class=line-no>&hellip;</div>').attr('line-no', 1+beforeIdx).get(0));
           els.push($('<div class="skip code">...</div>').attr('line-no', 1+beforeIdx).get(0));
-          els.push($('<div class=line-no>...</div>').attr('line-no', 1+afterIdx).get(0));
+          els.push($('<div class=line-no>&hellip;</div>').attr('line-no', 1+afterIdx).get(0));
           els.push($skipEl.get(0));
 
           beforeIdx += jump;
@@ -231,8 +231,8 @@ differ.prototype.buildView_ = function() {
 
   var $container = $('<div class="diff">');
 
-  $leftLineDiv.append($('<div class="line-no">&nbsp;</div>'));
-  $rightLineDiv.append($('<div class="line-no">&nbsp;</div>'));
+  $leftLineDiv.append($('<div class="line-no-header">&nbsp;</div>'));
+  $rightLineDiv.append($('<div class="line-no-header">&nbsp;</div>'));
   $leftContent.append($('<div class="diff-header">').text(this.params.beforeName));
   $rightContent.append($('<div class="diff-header">').text(this.params.afterName));
 

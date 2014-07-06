@@ -7,17 +7,18 @@
   max-width: 41ch;
 }
 
-.diff-header {
+.diff-header, .line-no-header {
   font-weight: bold;
   border-bottom: 1px solid #ddd;
   margin-bottom: -1px;
   background-color: #f7f7f7;
+  padding: 2px;
+  height: 1.11em;
 }
 
 .diff-line-no > div {
   text-align: right;
 }
-
 
 .diff-line-no {
   color: #999;
@@ -47,7 +48,7 @@
   display: table;
 }
 
-.line-no, .code, .diff-header {
+.line-no, .code {
   padding: 2px;
   height: 1.11em;
   white-space: pre;
@@ -56,6 +57,9 @@
 .diff {
   display: table;
   white-space: nowrap;
+}
+
+.line-no, .code {
   font-family: monospace;
 }
 
