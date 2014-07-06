@@ -13,17 +13,24 @@
   padding: 2px;
 }
 
-.diff-line-no > div {
-  text-align: right;
-}
-
 .diff-line-no {
-  display: table;
+  display: table;  /* shrink to fit longest line number */
 }
 
 .line-no {
   color: #999;
-  background-color: #f7f7f7;
+  /* background-color: #f7f7f7; */
+}
+
+.diff-left .line-no {
+  border-right: 1px solid #ddd;
+  text-align: right;
+}
+.diff-right .line-no {
+  border-left: 1px solid #ddd;
+  text-align: left;
+}
+.diff-left.diff-wrapper {
   border-right: 1px solid #ddd;
 }
 
@@ -37,22 +44,20 @@
 }
 
 .diff-content {
-  display: table;
+  display: table;  /* "expand to fit" */
+  min-width: 100%;
 }
 
 .line-no, .code {
   padding: 2px;
   height: 1.11em;
   white-space: pre;
+  font-family: monospace;
 }
 
 .diff {
   display: table;
   white-space: nowrap;
-}
-
-.line-no, .code {
-  font-family: monospace;
 }
 
 .diff-wrapper, .diff-wrapper > div {

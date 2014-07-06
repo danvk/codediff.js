@@ -162,9 +162,9 @@ differ.prototype.buildRow_ = function(beforeIdx, beforeEnd, afterIdx, afterEnd, 
 
 differ.prototype.buildView_ = function() {
   var $leftLineDiv = $('<div class="diff-line-no diff-left diff-left-line-no">');
-  var $leftContent = $('<div class="diff-content diff-left diff-left-content">');
+  var $leftContent = $('<div class="diff-content diff-left-content">');
   var $rightLineDiv = $('<div class="diff-line-no diff-right diff-right-line-no">');
-  var $rightContent = $('<div class="diff-content diff-right diff-right-content">');
+  var $rightContent = $('<div class="diff-content diff-right-content">');
 
   var contextSize = this.params.contextSize;
   var rows = [];
@@ -238,9 +238,10 @@ differ.prototype.buildView_ = function() {
 
   $container.append(
       $leftLineDiv,
-      $('<div class="diff-wrapper diff-column-width">').append($leftContent),
-      $rightLineDiv,
-      $('<div class="diff-wrapper diff-column-width">').append($rightContent));
+      $('<div class="diff-wrapper diff-left diff-column-width">').append($leftContent),
+      $('<div class="diff-wrapper diff-right diff-column-width">').append($rightContent),
+      $rightLineDiv
+      );
 
   // TODO(danvk): append each element of rows to the appropriate div here.
   rows.forEach(function(row) {
