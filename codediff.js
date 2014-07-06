@@ -22,6 +22,10 @@ var differ = function(beforeText, afterText, userParams) {
   }
 };
 
+differ.prototype.maxLineNumber = function() {
+  return Math.max(this.beforeLines.length, this.afterLines.length);
+};
+
 /**
  * @param {string} text Possibly multiline text containing spans that cross
  *     line breaks.
@@ -75,7 +79,6 @@ differ.highlightText_ = function(text, opt_language) {
 
   // TODO(danvk): look into suppressing highlighting if .relevance is low.
   var html;
-  // console.log(hljs.highlightAuto(text));
   if (opt_language) {
     html = hljs.highlight(opt_language, text, true).value;
   } else {
@@ -121,8 +124,8 @@ differ.prototype.attachHandlers_ = function(el) {
     }
 
     // Replace the "skip" rows with real code.
-    var $lefts = $(this).closest('.diff').find('.diff-left-line-no, .diff-left-content').find('[line-no=' + (1+skipData.beforeStartIndex) + ']');
-    var $rights = $(this).closest('.diff').find('.diff-right-line-no, .diff-right-content').find('[line-no=' + (1+skipData.afterStartIndex) + ']');
+    var $lefts = $(this).closest('.diff').find('.diff-left').find('[line-no=' + (1+skipData.beforeStartIndex) + ']');
+    var $rights = $(this).closest('.diff').find('.diff-right').find('[line-no=' + (1+skipData.afterStartIndex) + ']');
 
     if ($lefts.length == 2 && $rights.length == 2) {
       var els = [$lefts.get(0), $lefts.get(1), $rights.get(0), $rights.get(1)];
@@ -158,10 +161,10 @@ differ.prototype.buildRow_ = function(beforeIdx, beforeEnd, afterIdx, afterEnd, 
 };
 
 differ.prototype.buildView_ = function() {
-  var $leftLineDiv = $('<div class="diff-line-no diff-left-line-no">');
-  var $leftContent = $('<div class="diff-content diff-left-content">');
-  var $rightLineDiv = $('<div class="diff-line-no diff-right-line-no">');
-  var $rightContent = $('<div class="diff-content diff-right-content">');
+  var $leftLineDiv = $('<div class="diff-line-no diff-left diff-left-line-no">');
+  var $leftContent = $('<div class="diff-content diff-left diff-left-content">');
+  var $rightLineDiv = $('<div class="diff-line-no diff-right diff-right-line-no">');
+  var $rightContent = $('<div class="diff-content diff-right diff-right-content">');
 
   var contextSize = this.params.contextSize;
   var rows = [];
@@ -228,14 +231,16 @@ differ.prototype.buildView_ = function() {
 
   var $container = $('<div class="diff">');
 
-  $container.append(
-      $('<div class="diff-header diff-column-width">').text(this.params.beforeName),
-      $('<div class="diff-header diff-column-width">').text(this.params.afterName),
-      $('<br>'));
+  $leftLineDiv.append($('<div class="line-no">&nbsp;</div>'));
+  $rightLineDiv.append($('<div class="line-no">&nbsp;</div>'));
+  $leftContent.append($('<div class="diff-header">').text(this.params.beforeName));
+  $rightContent.append($('<div class="diff-header">').text(this.params.afterName));
 
   $container.append(
-      $('<div class="diff-wrapper diff-column-width">').append($leftLineDiv, $leftContent),
-      $('<div class="diff-wrapper diff-column-width">').append($rightLineDiv, $rightContent));
+      $leftLineDiv,
+      $('<div class="diff-wrapper diff-column-width">').append($leftContent),
+      $rightLineDiv,
+      $('<div class="diff-wrapper diff-column-width">').append($rightContent));
 
   // TODO(danvk): append each element of rows to the appropriate div here.
   rows.forEach(function(row) {
