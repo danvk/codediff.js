@@ -237,10 +237,16 @@ differ.prototype.buildView_ = function() {
   $rightContent.append($('<div class="diff-header">').text(this.params.afterName));
 
   $container.append(
-      $leftLineDiv,
-      $('<div class="diff-wrapper diff-left diff-column-width">').append($leftContent),
-      $('<div class="diff-wrapper diff-right diff-column-width">').append($rightContent),
-      $rightLineDiv
+      $('<div class="diff-column diff-left">').append(
+        $leftLineDiv,
+        $('<div class="diff-remainder">').append(
+          $('<div class="diff-wrapper diff-left diff-column-width">').append($leftContent))
+      ),
+      $('<div class="diff-column diff-right">').append(
+        $rightLineDiv,
+        $('<div class="diff-remainder">').append(
+          $('<div class="diff-wrapper diff-right diff-column-width">').append($rightContent))
+      )
       );
 
   // TODO(danvk): append each element of rows to the appropriate div here.
