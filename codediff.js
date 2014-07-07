@@ -160,6 +160,65 @@ differ.prototype.buildRow_ = function(beforeIdx, beforeEnd, afterIdx, afterEnd, 
   };
 };
 
+// Construct ranges of lines to show consecutively on either side.
+// The main work of this is factoring out ranges of common lines.
+// Output:
+// [ {change: "equal", left: { start, end }, right: { start, end }}, ... ]
+differ.prototype.buildRanges_ = function() {
+  var contextSize = this.params.contextSize;
+  var ranges = [];
+
+  for (var opcodeIdx = 0; opcodeIdx < this.opcodes.length; opcodeIdx++) {
+    var opcode = this.opcodes[opcodeIdx];
+    var change = opcode[0];  // "equal", "replace", "delete", "insert"
+    var beforeIdx = opcode[1];
+    var beforeEnd = opcode[2];
+    var afterIdx = opcode[3];
+    var afterEnd = opcode[4];
+    var rowCount = Math.max(beforeEnd - beforeIdx, afterEnd - afterIdx);
+    var topRows = [];
+    var botRows = [];
+
+    for (var i = 0; i < rowCount; i++) {
+      // Jump
+      if (contextSize && this.opcodes.length > 1 && change == 'equal' &&
+          ((opcodeIdx > 0 && i == contextSize) ||
+           (opcodeIdx == 0 && i == 0))) {
+        var jump = rowCount - ((opcodeIdx == 0 ? 1 : 2) * contextSize);
+        var isEnd = (opcodeIdx + 1 == this.opcodes.length);
+        if (isEnd) {
+          jump += (contextSize - 1);
+        }
+        if (jump > 1) {
+          ranges.push({
+            type: 'skip',
+            left: { start: beforeIdx, end: beforeIdx + jump },
+            right: { start: afterIdx, end: afterIdx + jump }
+          });
+
+          beforeIdx += jump;
+          afterIdx += jump;
+          i += jump - 1;
+
+          // skip last lines if they're all equal
+          if (isEnd) {
+            break;
+          } else {
+            continue;
+          }
+        }
+      }
+
+      var data = this.buildRow_(beforeIdx, beforeEnd, afterIdx, afterEnd, change);
+      beforeIdx = data.newBeforeIdx;
+      afterIdx = data.newAfterIdx;
+      topRows.push(data.row);
+    }
+  }
+
+  return ranges;
+};
+
 differ.prototype.buildView_ = function() {
   var $leftLineDiv = $('<div class="diff-line-no diff-left diff-left-line-no">');
   var $leftContent = $('<div class="diff-content diff-left-content">');
@@ -209,7 +268,7 @@ differ.prototype.buildView_ = function() {
           beforeIdx += jump;
           afterIdx += jump;
           i += jump - 1;
-          
+
           // skip last lines if they're all equal
           if (isEnd) {
             break;
@@ -249,7 +308,6 @@ differ.prototype.buildView_ = function() {
       )
       );
 
-  // TODO(danvk): append each element of rows to the appropriate div here.
   rows.forEach(function(row) {
     if (row.length != 4) throw "Invalid row: " + row;
 
@@ -364,6 +422,7 @@ function html_substr(html, start, count) {
 }
 
 
+// Add character-by-character diffs to a row (if appropriate).
 differ.addCharacterDiffs_ = function(beforeCell, afterCell) {
   var beforeText = $(beforeCell).text(),
       afterText = $(afterCell).text(),
@@ -371,7 +430,7 @@ differ.addCharacterDiffs_ = function(beforeCell, afterCell) {
       afterHtml = $(afterCell).html();
   var sm = new difflib.SequenceMatcher(beforeText.split(''), afterText.split(''));
   var opcodes = sm.get_opcodes();
-  var minEqualFrac = 0.5;  // suppress character-by-character diffs if there's less than this much overlap.
+  var minEqualFrac = 0.5;  // suppress char-by-chardiffs if there's less than this much overlap.
   var equalCount = 0, charCount = 0;
   opcodes.forEach(function(opcode) {
     var change = opcode[0];
@@ -383,6 +442,10 @@ differ.addCharacterDiffs_ = function(beforeCell, afterCell) {
   });
   if (equalCount < minEqualFrac * charCount) return;
 
+  // Splice in "insert", "delete" and "replace" tags.
+  // This is made more difficult by the presence of syntax highlighting, which
+  // has its own set of tags. The two can co-exists if we're careful to only
+  // wrap complete (balanced) DOM trees.
   var m = differ.htmlTextMapper.prototype.getHtmlSubstring;
   var beforeMapper = new differ.htmlTextMapper(beforeText, beforeHtml);
   var afterMapper = new differ.htmlTextMapper(afterText, afterHtml);

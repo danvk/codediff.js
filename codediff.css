@@ -5,6 +5,7 @@
 .diff-column-width {
   max-width: 101ch;
   min-width: 40ch;
+  width: 100%;
 }
 .diff-column {
   max-width: 50%;
