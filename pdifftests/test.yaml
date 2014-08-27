@@ -32,3 +32,11 @@ tests:
     config:
       <<: *white-background
       viewportSize: *smallscreen
+
+  - name: code
+    description:
+      Side-by-side diff with syntax highlighting.
+    url: http://localhost:8000/testcode.html
+    config:
+      <<: *white-background
+      viewportSize: *widescreen
