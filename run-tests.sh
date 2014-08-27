@@ -8,4 +8,4 @@ source env/bin/activate
 grunt test
 
 # dpxdt screenshot tests
-dpxdt test pdifftests
+dpxdt --verbose test pdifftests
