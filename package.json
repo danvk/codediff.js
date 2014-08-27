@@ -17,6 +17,7 @@
     "grunt-contrib-qunit": "~0.5.1",
     "grunt-qunit-cov": "~0.3.6",
     "grunt-qunit-junit": "~0.1.0",
+    "phantomjs": "~1.9.7",
     "qunitjs": "^1.14.0"
   },
   "scripts": {
