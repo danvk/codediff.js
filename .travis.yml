@@ -4,6 +4,6 @@ node_js:
 
 install:
   - npm install
-  - pip install -r requirements.txt
+  - ./configure-python.sh
 
 script: ./run-tests.sh
