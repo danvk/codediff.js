@@ -1,0 +1,34 @@
+name: basic-test
+
+setup: |
+    python -m SimpleHTTPServer
+
+aliases:
+  - &white-background
+      injectCss: |
+        body {
+          background-color: white;
+        }
+  - &widescreen
+      width: 1280
+      height: 600
+  - &smallscreen
+      width: 800
+      height: 600
+
+tests:
+  - name: wide-diff
+    description:
+      A page showing basic diffing, without syntax highlighting.
+    url: http://localhost:8000/test.html
+    config:
+      <<: *white-background
+      viewportSize: *widescreen
+
+  - name: small-diff
+    description:
+      A page showing basic diffing, without syntax highlighting.
+    url: http://localhost:8000/test.html
+    config:
+      <<: *white-background
+      viewportSize: *smallscreen
