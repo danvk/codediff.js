@@ -8,4 +8,4 @@ source env/bin/activate
 grunt test
 
 # dpxdt screenshot tests
-dpxdt --verbose test pdifftests
+dpxdt --imgur_client_id bec0e685e35490b --verbose test pdifftests
