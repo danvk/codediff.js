@@ -1,7 +1,16 @@
 <!doctype html>
 <html>
 <head>
+  <!-- A web font both looks nice and ensures consistent pixels across platforms.
+       It's not necessary for codediff.js to function, however. Any font will do. -->
+  <link href='http://fonts.googleapis.com/css?family=Inconsolata' rel='stylesheet' type='text/css'>
   <link rel=stylesheet href="codediff.css">
+  <style>
+  .line-no, .code {
+    font-family: Courier;
+    font-size: small;
+  }
+  </style>
 
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 </head>
