@@ -66,6 +66,19 @@ QUnit.test('mixed inserts and markup', function(assert) {
   var beforeEl = $('<div>').html(beforeCode).get(0);
   var afterEl =  $('<div>').html(afterCode).get(0);
 
+  // XXX this is strange -- is this just asserting that there are no exceptions?
   codediff.addCharacterDiffs_(beforeEl, afterEl, true);
   assert.equal(true, true);
+});
+
+// See https://github.com/danvk/github-syntax/issues/17
+QUnit.test('pure character add', function(assert) {
+  var beforeCode = 'output.writeBytes(obj.sequence)';
+  var afterCode =  'output.writeBytes(obj.sequence.toArray)';
+  var beforeEl = $('<div>').html(beforeCode).get(0);
+  var afterEl =  $('<div>').html(afterCode).get(0);
+
+  codediff.addCharacterDiffs_(beforeEl, afterEl, true);
+  assert.equal($(beforeEl).html(), 'output.writeBytes(obj.sequence)');
+  assert.equal($(afterEl).html(),  'output.writeBytes(obj.sequence<span class="char-insert">.toArray</span>)');
 });
