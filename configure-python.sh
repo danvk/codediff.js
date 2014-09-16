@@ -6,4 +6,4 @@ set -o errexit
 #virtualenv env
 #source env/bin/activate
 sudo pip install -r requirements.txt
-sudo apt-get install grunt
+brew install grunt
