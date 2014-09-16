@@ -3,7 +3,6 @@ language: objective-c
 #  - "0.10"
 
 install:
-  - npm install
   - ./configure-python.sh
 
 script: ./run-tests.sh

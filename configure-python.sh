@@ -5,5 +5,5 @@ set -o errexit
 #sudo pip install virtualenv
 #virtualenv env
 #source env/bin/activate
+sudo npm install -g
 sudo pip install -r requirements.txt
-brew install grunt
