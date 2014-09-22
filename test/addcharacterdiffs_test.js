@@ -101,16 +101,19 @@ QUnit.test('pure add with assertCharDiff', function(assert) {
       'output.writeBytes(obj.sequence[.toArray])');
 });
 
-/*
 QUnit.test('char diffs on word boundaries', function(assert) {
-  var before, after;
-  before = '<ImageDiffModeSelector filePair={filePair}';
-  after =  '<DiffView filePair={filePair}';
+  assertCharDiff(assert,
+      '<ImageDiffModeSelector filePair={filePair}',
+      '<[Image]Diff[ModeSelector] filePair={filePair}',
+      '<DiffView filePair={filePair}',
+      '<Diff[View] filePair={filePair}'
+                );
 
+  /*
   before = 'mode={this.state.imageDiffMode}';
   after = 'imageDiffMode={this.state.imageDiffMode}';
 
   before = 'changeHandler={this.changeImageDiffModeHandler}/>';
   after = 'changeImageDiffModeHandler={this.changeImageDiffModeHandler} />';
+  */
 });
-*/
