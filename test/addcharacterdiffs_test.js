@@ -151,6 +151,13 @@ QUnit.test('char diffs on word boundaries', function(assert) {
       '      return <li key={idx}>{content}</li>;',
       '      return <li key={idx}>{content}</li>[;]'
       );
+
+  assertCharDiff(assert,
+      'import net.sf.samtools._',
+      'import [net.sf].samtools._',
+      'import htsjdk.samtools._',
+      'import [htsjdk].samtools._'
+      );
 });
 
 QUnit.test('add a comma', function(assert) {
