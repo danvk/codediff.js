@@ -71,14 +71,46 @@ QUnit.test('mixed inserts and markup', function(assert) {
   assert.equal(true, true);
 });
 
-// See https://github.com/danvk/github-syntax/issues/17
-QUnit.test('pure character add', function(assert) {
-  var beforeCode = 'output.writeBytes(obj.sequence)';
-  var afterCode =  'output.writeBytes(obj.sequence.toArray)';
-  var beforeEl = $('<div>').html(beforeCode).get(0);
-  var afterEl =  $('<div>').html(afterCode).get(0);
+function assertCharDiff(assert, beforeText, beforeExpectation,
+                        afterText, afterExpectation) {
+  var codes = codediff.computeCharacterDiffs_(beforeText, afterText),
+      beforeCodes = codes[0],
+      afterCodes = codes[1];
 
-  codediff.addCharacterDiffs_(beforeEl, afterEl);
-  assert.equal($(beforeEl).html(), 'output.writeBytes(obj.sequence)');
-  assert.equal($(afterEl).html(),  'output.writeBytes(obj.sequence<span class="char-insert">.toArray</span>)');
+  var process = function(codes, txt) {
+    return codes.map(function(code) {
+      var part = txt.substring(code[1], code[2]);
+      if (code[0] != null) part = '[' + part + ']';
+      return part;
+    }).join('');
+  };
+
+  var beforeActual = process(beforeCodes, beforeText),
+      afterActual =  process(afterCodes, afterText);
+
+  assert.equal(beforeActual, beforeExpectation);
+  assert.equal(afterActual, afterExpectation);
+}
+
+// See https://github.com/danvk/github-syntax/issues/17
+QUnit.test('pure add with assertCharDiff', function(assert) {
+  assertCharDiff(assert,
+      'output.writeBytes(obj.sequence)',
+      'output.writeBytes(obj.sequence)',
+      'output.writeBytes(obj.sequence.toArray)',
+      'output.writeBytes(obj.sequence[.toArray])');
 });
+
+/*
+QUnit.test('char diffs on word boundaries', function(assert) {
+  var before, after;
+  before = '<ImageDiffModeSelector filePair={filePair}';
+  after =  '<DiffView filePair={filePair}';
+
+  before = 'mode={this.state.imageDiffMode}';
+  after = 'imageDiffMode={this.state.imageDiffMode}';
+
+  before = 'changeHandler={this.changeImageDiffModeHandler}/>';
+  after = 'changeImageDiffModeHandler={this.changeImageDiffModeHandler} />';
+});
+*/
