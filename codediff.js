@@ -436,6 +436,7 @@ differ.splitIntoWords_ = function(line) {
     return SYM;
   };
 
+  // TODO: consider putting each whitespace char into its own word.
   // Single words can be [A-Z][a-z]+, [A-Z]+, [a-z]+, [0-9]+ or \s+.
   var words = [];
   var lastType = -1;
@@ -462,7 +463,19 @@ differ.splitIntoWords_ = function(line) {
  *     character differences are not appropriate for this line pairing.
  */
 differ.computeCharacterDiffs_ = function(beforeText, afterText) {
-  var sm = new difflib.SequenceMatcher(beforeText.split(''), afterText.split(''));
+  var beforeWords = differ.splitIntoWords_(beforeText),
+      afterWords = differ.splitIntoWords_(afterText);
+
+  var wordToIdx = function(isBefore, idx) {
+    var words = isBefore ? beforeWords : afterWords;
+    var charIdx = 0;
+    for (var i = 0; i < idx; i++) {
+      charIdx += words[i].length;
+    }
+    return charIdx;
+  };
+
+  var sm = new difflib.SequenceMatcher(beforeWords, afterWords);
   var opcodes = sm.get_opcodes();
   var minEqualFrac = 0.5;  // suppress char-by-chardiffs if there's less than this much overlap.
   var equalCount = 0, charCount = 0;
@@ -474,15 +487,16 @@ differ.computeCharacterDiffs_ = function(beforeText, afterText) {
     if (change == 'equal') equalCount += count;
     charCount += count;
   });
+  // TODO: make this threshold still in terms of chars, not words?
   if (equalCount < minEqualFrac * charCount) return;
 
   var beforeOut = [], afterOut = [];  // (span class, start, end) triples
   opcodes.forEach(function(opcode) {
     var change = opcode[0];
-    var beforeIdx = opcode[1];
-    var beforeEnd = opcode[2];
-    var afterIdx = opcode[3];
-    var afterEnd = opcode[4];
+    var beforeIdx = wordToIdx(true, opcode[1]);
+    var beforeEnd = wordToIdx(true, opcode[2]);
+    var afterIdx = wordToIdx(false, opcode[3]);
+    var afterEnd = wordToIdx(false, opcode[4]);
     if (change == 'equal') {
       beforeOut.push([null, beforeIdx, beforeEnd]);
       afterOut.push([null, afterIdx, afterEnd]);

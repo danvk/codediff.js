@@ -115,22 +115,43 @@ QUnit.test('splitIntoWords', function(assert) {
       ['Test', '1', 'TEST', '23', 'test', 'Abc', '{', '}']);
 });
 
-// QUnit.test('char diffs on word boundaries', function(assert) {
-//   assertCharDiff(assert,
-//       '<ImageDiffModeSelector filePair={filePair}',
-//       '<[Image]Diff[ModeSelector] filePair={filePair}',
-//       '<DiffView filePair={filePair}',
-//       '<Diff[View] filePair={filePair}'
-//                 );
-// 
-//   /*
-//   before = 'mode={this.state.imageDiffMode}';
-//   after = 'imageDiffMode={this.state.imageDiffMode}';
-// 
-//   before = 'changeHandler={this.changeImageDiffModeHandler}/>';
-//   after = 'changeImageDiffModeHandler={this.changeImageDiffModeHandler} />';
-//   */
-// });
+QUnit.test('char diffs on word boundaries', function(assert) {
+  assertCharDiff(assert,
+      '<ImageDiffModeSelector filePair={filePair}',
+      '<[Image]Diff[ModeSelector] filePair={filePair}',
+      '<DiffView filePair={filePair}',
+      '<Diff[View] filePair={filePair}'
+      );
+
+  assertCharDiff(assert,
+      'mode={this.state.imageDiffMode}',
+      '[mode]={this.state.imageDiffMode}',
+      'imageDiffMode={this.state.imageDiffMode}',
+      '[imageDiffMode]={this.state.imageDiffMode}'
+      );
+
+  assertCharDiff(assert,
+      'changeHandler={this.changeImageDiffModeHandler}/>',
+      'changeHandler={this.changeImageDiffModeHandler}/>',
+      'changeImageDiffModeHandler={this.changeImageDiffModeHandler} />',
+      'change[ImageDiffMode]Handler={this.changeImageDiffModeHandler}[ ]/>'
+      );
+
+  // XXX this could be more specific.
+  assertCharDiff(assert,
+      'var lis = this.props.filePairs.map((file_pair, idx) => {',
+      'var lis = this.props.filePairs.map((file[_pair], idx) => {',
+      'var lis = this.props.filePairs.map((filePair, idx) => {',
+      'var lis = this.props.filePairs.map((file[Pair], idx) => {'
+      );
+
+  assertCharDiff(assert,
+      '      return <li key={idx}>{content}</li>',
+      '      return <li key={idx}>{content}</li>',
+      '      return <li key={idx}>{content}</li>;',
+      '      return <li key={idx}>{content}</li>[;]'
+      );
+});
 
 QUnit.test('add a comma', function(assert) {
   assertCharDiff(assert,
