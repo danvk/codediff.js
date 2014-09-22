@@ -73,8 +73,11 @@ QUnit.test('mixed inserts and markup', function(assert) {
 
 function assertCharDiff(assert, beforeText, beforeExpectation,
                         afterText, afterExpectation) {
-  var codes = codediff.computeCharacterDiffs_(beforeText, afterText),
-      beforeCodes = codes[0],
+  var codes = codediff.computeCharacterDiffs_(beforeText, afterText);
+  assert.notEqual(codes, null,
+                  'Declined to generate a diff when one was expected.');
+
+  var beforeCodes = codes[0],
       afterCodes = codes[1];
 
   var process = function(codes, txt) {
@@ -166,4 +169,43 @@ QUnit.test('add a comma', function(assert) {
       '  foo: "bar"',
       '  foo: "bar",',
       '  foo: "bar"[,]');
+});
+
+QUnit.test('whitespace diff', function(assert) {
+  assertCharDiff(assert,
+      '  ',
+      '[  ]',
+      '',
+      '');
+
+  assertCharDiff(assert,
+      '',
+      '',
+      '  ',
+      '[  ]');
+
+  assertCharDiff(assert,
+      'foobar',
+      'foobar',
+      '  foobar',
+      '[  ]foobar');
+
+  assertCharDiff(assert,
+      '    foobar',
+      '[    ]foobar',
+      'foobar',
+      'foobar');
+});
+
+QUnit.test('char diff thresholds', function(assert) {
+  // Not a useful diff -- only one character in common!
+  assert.equal(codediff.computeCharacterDiffs_('foo.bar', 'blah.baz'), null);
+  assert.equal(codediff.computeCharacterDiffs_('foo.', 'blah.'), null);
+
+  // with the "bar"s equal, it's become useful.
+  assertCharDiff(assert,
+                 'foo.bar',
+                 '[foo].bar',
+                 'blah.bar',
+                 '[blah].bar');
 });

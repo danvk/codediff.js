@@ -466,6 +466,7 @@ differ.computeCharacterDiffs_ = function(beforeText, afterText) {
   var beforeWords = differ.splitIntoWords_(beforeText),
       afterWords = differ.splitIntoWords_(afterText);
 
+  // TODO: precompute two arrays; this does too much work.
   var wordToIdx = function(isBefore, idx) {
     var words = isBefore ? beforeWords : afterWords;
     var charIdx = 0;
@@ -477,18 +478,33 @@ differ.computeCharacterDiffs_ = function(beforeText, afterText) {
 
   var sm = new difflib.SequenceMatcher(beforeWords, afterWords);
   var opcodes = sm.get_opcodes();
-  var minEqualFrac = 0.5;  // suppress char-by-chardiffs if there's less than this much overlap.
+
+  // Suppress char-by-char diffs if there's less than 50% character overlap.
+  // The one exception is pure whitespace diffs, which should always be shown.
+  var minEqualFrac = 0.5;
   var equalCount = 0, charCount = 0;
+  var beforeDiff = '', afterDiff = '';
   opcodes.forEach(function(opcode) {
     var change = opcode[0];
-    var beforeLen = opcode[2] - opcode[1];
-    var afterLen = opcode[4] - opcode[3];
+    var beforeIdx = wordToIdx(true, opcode[1]);
+    var beforeEnd = wordToIdx(true, opcode[2]);
+    var afterIdx = wordToIdx(false, opcode[3]);
+    var afterEnd = wordToIdx(false, opcode[4]);
+    var beforeLen = beforeEnd - beforeIdx;
+    var afterLen = afterEnd - afterIdx;
     var count = beforeLen + afterLen;
-    if (change == 'equal') equalCount += count;
+    if (change == 'equal') {
+      equalCount += count;
+    } else {
+      beforeDiff += beforeText.substring(beforeIdx, beforeEnd);
+      afterDiff += afterText.substring(afterIdx, afterEnd);
+    }
     charCount += count;
   });
-  // TODO: make this threshold still in terms of chars, not words?
-  if (equalCount < minEqualFrac * charCount) return;
+  if (equalCount < minEqualFrac * charCount &&
+      !(beforeDiff.match(/\s+/) || afterDiff.match(/\s+/))) {
+    return null;
+  }
 
   var beforeOut = [], afterOut = [];  // (span class, start, end) triples
   opcodes.forEach(function(opcode) {
