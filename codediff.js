@@ -421,6 +421,37 @@ function html_substr(html, start, count) {
   return div.innerHTML;
 }
 
+/**
+ * @param {string} line The line to be split
+ * @return {Array.<string>} Component words in the line. An invariant is that
+ *     splitIntoWords_(line).join('') == line.
+ */
+differ.splitIntoWords_ = function(line) {
+  var LC = 0, UC = 2, NUM = 3, WS = 4, SYM = 5;
+  var charType = function(c) {
+    if (c.match(/[a-z]/)) return LC;
+    if (c.match(/[A-Z]/)) return UC;
+    if (c.match(/[0-9]/)) return NUM;
+    if (c.match(/\s/)) return WS;
+    return SYM;
+  };
+
+  // Single words can be [A-Z][a-z]+, [A-Z]+, [a-z]+, [0-9]+ or \s+.
+  var words = [];
+  var lastType = -1;
+  for (var i = 0; i < line.length; i++) {
+    var c = line.charAt(i);
+    var ct = charType(c);
+    if (ct == lastType && ct != SYM ||
+        ct == LC && lastType == UC && words[words.length - 1].length == 1) {
+      words[words.length - 1] += c;
+    } else {
+      words.push(c);
+    }
+    lastType = ct;
+  }
+  return words;
+};
 
 /**
  * Compute an intra-line diff.

@@ -101,19 +101,41 @@ QUnit.test('pure add with assertCharDiff', function(assert) {
       'output.writeBytes(obj.sequence[.toArray])');
 });
 
-QUnit.test('char diffs on word boundaries', function(assert) {
+
+QUnit.test('splitIntoWords', function(assert) {
+  assert.deepEqual(codediff.splitIntoWords_(
+      '<ImageDiffModeSelector filePair={filePair}'),
+      ['<', 'Image', 'Diff', 'Mode', 'Selector', ' ', 'file', 'Pair', '=', '{',
+       'file', 'Pair', '}']);
+  assert.deepEqual(codediff.splitIntoWords_(
+      '<DiffView filePair={filePair}'),
+      ['<', 'Diff', 'View', ' ', 'file', 'Pair', '=', '{', 'file', 'Pair', '}']);
+  assert.deepEqual(codediff.splitIntoWords_(
+      'Test1TEST23testAbc{}'),
+      ['Test', '1', 'TEST', '23', 'test', 'Abc', '{', '}']);
+});
+
+// QUnit.test('char diffs on word boundaries', function(assert) {
+//   assertCharDiff(assert,
+//       '<ImageDiffModeSelector filePair={filePair}',
+//       '<[Image]Diff[ModeSelector] filePair={filePair}',
+//       '<DiffView filePair={filePair}',
+//       '<Diff[View] filePair={filePair}'
+//                 );
+// 
+//   /*
+//   before = 'mode={this.state.imageDiffMode}';
+//   after = 'imageDiffMode={this.state.imageDiffMode}';
+// 
+//   before = 'changeHandler={this.changeImageDiffModeHandler}/>';
+//   after = 'changeImageDiffModeHandler={this.changeImageDiffModeHandler} />';
+//   */
+// });
+
+QUnit.test('add a comma', function(assert) {
   assertCharDiff(assert,
-      '<ImageDiffModeSelector filePair={filePair}',
-      '<[Image]Diff[ModeSelector] filePair={filePair}',
-      '<DiffView filePair={filePair}',
-      '<Diff[View] filePair={filePair}'
-                );
-
-  /*
-  before = 'mode={this.state.imageDiffMode}';
-  after = 'imageDiffMode={this.state.imageDiffMode}';
-
-  before = 'changeHandler={this.changeImageDiffModeHandler}/>';
-  after = 'changeImageDiffModeHandler={this.changeImageDiffModeHandler} />';
-  */
+      '  foo: "bar"',
+      '  foo: "bar"',
+      '  foo: "bar",',
+      '  foo: "bar"[,]');
 });
