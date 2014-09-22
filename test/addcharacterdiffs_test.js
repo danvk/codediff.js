@@ -208,4 +208,9 @@ QUnit.test('char diff thresholds', function(assert) {
                  '[foo].bar',
                  'blah.bar',
                  '[blah].bar');
+
+  // pure adds/deletes shouldn't be flagged as char diffs.
+  assert.equal(codediff.computeCharacterDiffs_(
+      '',
+      '      date.getSeconds() + date.getMilliseconds();'), null);
 });

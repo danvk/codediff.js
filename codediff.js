@@ -502,7 +502,7 @@ differ.computeCharacterDiffs_ = function(beforeText, afterText) {
     charCount += count;
   });
   if (equalCount < minEqualFrac * charCount &&
-      !(beforeDiff.match(/\s+/) || afterDiff.match(/\s+/))) {
+      !(beforeDiff.match(/^\s*$/) && afterDiff.match(/^\s*$/))) {
     return null;
   }
 
