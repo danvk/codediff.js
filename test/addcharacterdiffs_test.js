@@ -39,7 +39,7 @@ QUnit.test('char diffs with trailing markup', function(assert) {
   var beforeText = $(before).text(),
       afterText = $(after).text();
 
-  codediff.addCharacterDiffs_(before, after, true);
+  codediff.addCharacterDiffs_(before, after);
   assert.equal($(before).text(), beforeText);
   assert.equal($(after).text(), afterText);
   assert.equal($(before).html(), "<q>''</q>");
@@ -53,7 +53,7 @@ QUnit.test('char diffs with markup', function(assert) {
   var beforeText = $(before).text(),
       afterText = $(after).text();
 
-  codediff.addCharacterDiffs_(before, after, true);
+  codediff.addCharacterDiffs_(before, after);
   assert.equal($(before).text(), beforeText);
   assert.equal($(after).text(), afterText);
   assert.equal($(before).html(), "    <kw>return</kw> <q>''</q> + date.getFullYear();");
@@ -67,7 +67,7 @@ QUnit.test('mixed inserts and markup', function(assert) {
   var afterEl =  $('<div>').html(afterCode).get(0);
 
   // XXX this is strange -- is this just asserting that there are no exceptions?
-  codediff.addCharacterDiffs_(beforeEl, afterEl, true);
+  codediff.addCharacterDiffs_(beforeEl, afterEl);
   assert.equal(true, true);
 });
 
@@ -78,7 +78,7 @@ QUnit.test('pure character add', function(assert) {
   var beforeEl = $('<div>').html(beforeCode).get(0);
   var afterEl =  $('<div>').html(afterCode).get(0);
 
-  codediff.addCharacterDiffs_(beforeEl, afterEl, true);
+  codediff.addCharacterDiffs_(beforeEl, afterEl);
   assert.equal($(beforeEl).html(), 'output.writeBytes(obj.sequence)');
   assert.equal($(afterEl).html(),  'output.writeBytes(obj.sequence<span class="char-insert">.toArray</span>)');
 });
