@@ -443,7 +443,7 @@ differ.splitIntoWords_ = function(line) {
   for (var i = 0; i < line.length; i++) {
     var c = line.charAt(i);
     var ct = charType(c);
-    if (ct == lastType && ct != SYM ||
+    if (ct == lastType && ct != SYM && ct != WS ||
         ct == LC && lastType == UC && words[words.length - 1].length == 1) {
       words[words.length - 1] += c;
     } else {

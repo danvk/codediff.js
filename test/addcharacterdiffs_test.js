@@ -116,6 +116,9 @@ QUnit.test('splitIntoWords', function(assert) {
   assert.deepEqual(codediff.splitIntoWords_(
       'Test1TEST23testAbc{}'),
       ['Test', '1', 'TEST', '23', 'test', 'Abc', '{', '}']);
+  assert.deepEqual(codediff.splitIntoWords_(
+      '   FooBar'),
+      [' ', ' ', ' ', 'Foo', 'Bar']);
 });
 
 QUnit.test('char diffs on word boundaries', function(assert) {
@@ -183,6 +186,12 @@ QUnit.test('whitespace diff', function(assert) {
       '',
       '  ',
       '[  ]');
+
+  assertCharDiff(assert,
+      '       <div className="examine-page">',
+      '       <div className="examine-page">',
+      '        <div className="examine-page">',
+      '[ ]       <div className="examine-page">');
 
   assertCharDiff(assert,
       'foobar',
