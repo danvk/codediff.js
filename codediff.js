@@ -436,7 +436,6 @@ differ.splitIntoWords_ = function(line) {
     return SYM;
   };
 
-  // TODO: consider putting each whitespace char into its own word.
   // Single words can be [A-Z][a-z]+, [A-Z]+, [a-z]+, [0-9]+ or \s+.
   var words = [];
   var lastType = -1;
