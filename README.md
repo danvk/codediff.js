@@ -5,6 +5,8 @@ codediff.js is a two-column JavaScript diff visualization with syntax highlighti
 
 It was originally based on [jsdifflib](https://github.com/cemerick/jsdifflib), but has been rewritten almost entirely.
 
+[Try the online demo!](http://rawgit.com/danvk/codediff.js/master/testcode.html)
+
 ![Screenshot of webdiff in action](http://www.danvk.org/webdiff.png)
 
 codediff.js is used by [webdiff](https://github.com/danvk/webdiff).
