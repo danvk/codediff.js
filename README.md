@@ -11,27 +11,29 @@ codediff.js is used by [webdiff](https://github.com/danvk/webdiff).
 
 ## Usage
 
-    <!-- Third-party dependencies -->
-    <script src="jquery.min.js"></script>
-    <script src="highlight.min.js"></script>
-    <link rel="stylesheet" href="googlecode.css">  <!-- highlight.js theme -->
-    
-    <!-- codediff -->
-    <script src="difflib.js"></script>
-    <script src="codediff.js"></script>
-    <link rel="stylesheet" href="codediff.css">
+```html
+<!-- Third-party dependencies -->
+<script src="jquery.min.js"></script>
+<script src="highlight.min.js"></script>
+<link rel="stylesheet" href="googlecode.css">  <!-- highlight.js theme -->
 
-    <!-- DOM -->
-    <p>Here's the diff!</p>    
-    <div id="diffview"></div>
+<!-- codediff -->
+<script src="difflib.js"></script>
+<script src="codediff.js"></script>
+<link rel="stylesheet" href="codediff.css">
 
-    <!-- Usage -->
-    <script type="text/javascript">
-    $('#diffview').append(
-        codediff.buildView(codeBefore, codeAfter, {
-            /* options -- see below */
-        }));
-    </script>
+<!-- DOM -->
+<p>Here's the diff!</p>    
+<div id="diffview"></div>
+
+<!-- Usage -->
+<script type="text/javascript">
+$('#diffview').append(
+    codediff.buildView(codeBefore, codeAfter, {
+        /* options -- see below */
+    }));
+</script>
+```
 
 ## Options
 
@@ -44,13 +46,15 @@ Here are possible keys you can pass through the options parameter:
 
 Here's an example usage with a filled-out options parameter:
 
-    $('#diffview').append(
-        codediff.buildView(codeBefore, codeAfter, {
-            language: 'python',
-            beforeName: 'oldfilename.py',
-            afterName: 'newfilename.py',
-            contextSize: 8
-        }));
+```javascript
+$('#diffview').append(
+    codediff.buildView(codeBefore, codeAfter, {
+        language: 'python',
+        beforeName: 'oldfilename.py',
+        afterName: 'newfilename.py',
+        contextSize: 8
+    }));
+```
 
 ## Development
 
