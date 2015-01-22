@@ -36,12 +36,14 @@ table.diff td {
   background-color: #f7f7f7;
 }
 .line-no:first-child {
-  background-image: linear-gradient(to left, #f7f7f7, #f7f7f7 3px, transparent, transparent 6px, #f7f7f7 6px),
-                    linear-gradient(#f7f7f7, #f7f7f7 1.4em, #aaa 1.4em);
+  background-image:
+      linear-gradient(to left, #f7f7f7, #f7f7f7 3px, transparent, transparent 6px, #f7f7f7 6px),
+      linear-gradient(#f7f7f7, #f7f7f7 1.4em, #aaa 1.4em);
 }
 .line-no:last-child {
-  background-image: linear-gradient(to right, #f7f7f7, #f7f7f7 3px, transparent, transparent 6px, #f7f7f7 6px),
-                    linear-gradient(#f7f7f7, #f7f7f7 1.4em, #aaa 1.4em);
+  background-image:
+      linear-gradient(to right, #f7f7f7, #f7f7f7 3px, transparent, transparent 6px, #f7f7f7 6px),
+      linear-gradient(#f7f7f7, #f7f7f7 1.4em, #aaa 1.4em);
 }
 
 table.diff .line-no:first-child {
@@ -60,6 +62,10 @@ table.diff td:nth-child(2) {
   padding: 2px;
   height: 1.11em;
   font-family: monospace;
+}
+.diff .skip {
+  text-align: center;
+  background: #f7f7f7;
 }
 
 .diff .delete {

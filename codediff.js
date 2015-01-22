@@ -115,7 +115,7 @@ differ.prototype.attachHandlers_ = function(el) {
       afterIdx = data.newAfterIdx;
       var row = data.row;
       var $tr = $('<tr>');
-      $tr.append(row[0], row[1], row[3], row[2]);
+      $tr.append(row);
       newTrs.push($tr.get(0));
     }
 
@@ -208,17 +208,16 @@ differ.prototype.buildView_ = function() {
           var els = [];
           topRows.push(els);
 
-          var $skipEl = $('<td class="skip after code"><a href="#">Show ' + jump + ' lines</a></div>');
+          var $skipEl = $('<td colspan="2" class="skip code"><a href="#">Show ' + jump + ' more lines</a></div>');
           $skipEl.data({
             'beforeStartIndex': beforeIdx,
             'afterStartIndex': afterIdx,
             'jumpLength': jump,
-          }).attr('line-no', 1 + afterIdx);
+          });
 
-          els.push($('<td class=line-no>&hellip;</div>').attr('line-no', 1+beforeIdx).get(0));
-          els.push($('<td class="skip before code">...</div>').attr('line-no', 1+beforeIdx).get(0));
-          els.push($('<td class=line-no>&hellip;</div>').attr('line-no', 1+afterIdx).get(0));
+          els.push($('<td class=line-no>&hellip;</div>').get(0));
           els.push($skipEl.get(0));
+          els.push($('<td class=line-no>&hellip;</div>').get(0));
 
           beforeIdx += jump;
           afterIdx += jump;
@@ -246,10 +245,12 @@ differ.prototype.buildView_ = function() {
   var $table = $('<table class="diff">');
 
   rows.forEach(function(row) {
-    if (row.length != 4) throw "Invalid row: " + row;
+    if (row.length != 3 && row.length != 4) {
+      throw "Invalid row: " + row;
+    }
 
     var $tr = $('<tr>');
-    $tr.append(row[0], row[1], row[3], row[2]);
+    $tr.append(row);
     $table.append($tr);
   });
   $container.append($table);
@@ -265,25 +266,34 @@ differ.prototype.buildView_ = function() {
 };
 
 function addCells(row, tidx, tend, isHtml, textLines, side, change, line_no) {
+  var newIdx = 0,
+      lineNoTd, codeTd;
   if (tidx < tend) {
     var txt = textLines[tidx].replace(/\t/g, "\u00a0\u00a0\u00a0\u00a0");
-    row.push($('<td class=line-no>')
+    lineNoTd = $('<td class=line-no>')
                   .text(tidx + 1)
-                  .attr('line-no', line_no)
-                  .get(0));
-    var $code = $('<td>').addClass(side + ' ' + change + ' code').attr('line-no', line_no);
+                  .get(0);
+    var $code = $('<td>').addClass(side + ' ' + change + ' code');
     if (isHtml) {
       $code.html(txt);
     } else {
       $code.text(txt);
     }
-    row.push($code.get(0));
-    return tidx + 1;
+    codeTd = $code.get(0);
+    newIdx = tidx + 1;
   } else {
-    row.push($('<td class=line-no>').attr('line-no', line_no).get(0));
-    row.push($('<td class="empty code ' + side + '">').attr('line-no', line_no).get(0));
-    return tidx;
+    var lineNoTd = $('<td class=line-no>').get(0),
+        codeTd = $('<td class="empty code ' + side + '">').get(0);
+    newIdx = tidx;
   }
+  if (side == 'before') {
+    row.push(lineNoTd)
+    row.push(codeTd)
+  } else {
+    row.push(codeTd)
+    row.push(lineNoTd)
+  }
+  return newIdx;
 }
 
 function walkTheDOM(node, func) {
