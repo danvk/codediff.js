@@ -123,6 +123,8 @@ differ.prototype.attachHandlers_ = function(el) {
       newRows.push(data.row);
     }
 
+    console.log(newRows);
+
     // Replace the "skip" rows with real code.
     var $lefts = $(this).closest('.diff').find('.diff-left').find('[line-no=' + (1+skipData.beforeStartIndex) + ']');
     var $rights = $(this).closest('.diff').find('.diff-right').find('[line-no=' + (1+skipData.afterStartIndex) + ']');
@@ -160,64 +162,6 @@ differ.prototype.buildRow_ = function(beforeIdx, beforeEnd, afterIdx, afterEnd, 
   };
 };
 
-// Construct ranges of lines to show consecutively on either side.
-// The main work of this is factoring out ranges of common lines.
-// Output:
-// [ {change: "equal", left: { start, end }, right: { start, end }}, ... ]
-differ.prototype.buildRanges_ = function() {
-  var contextSize = this.params.contextSize;
-  var ranges = [];
-
-  for (var opcodeIdx = 0; opcodeIdx < this.opcodes.length; opcodeIdx++) {
-    var opcode = this.opcodes[opcodeIdx];
-    var change = opcode[0];  // "equal", "replace", "delete", "insert"
-    var beforeIdx = opcode[1];
-    var beforeEnd = opcode[2];
-    var afterIdx = opcode[3];
-    var afterEnd = opcode[4];
-    var rowCount = Math.max(beforeEnd - beforeIdx, afterEnd - afterIdx);
-    var topRows = [];
-    var botRows = [];
-
-    for (var i = 0; i < rowCount; i++) {
-      // Jump
-      if (contextSize && this.opcodes.length > 1 && change == 'equal' &&
-          ((opcodeIdx > 0 && i == contextSize) ||
-           (opcodeIdx == 0 && i == 0))) {
-        var jump = rowCount - ((opcodeIdx == 0 ? 1 : 2) * contextSize);
-        var isEnd = (opcodeIdx + 1 == this.opcodes.length);
-        if (isEnd) {
-          jump += (contextSize - 1);
-        }
-        if (jump > 1) {
-          ranges.push({
-            type: 'skip',
-            left: { start: beforeIdx, end: beforeIdx + jump },
-            right: { start: afterIdx, end: afterIdx + jump }
-          });
-
-          beforeIdx += jump;
-          afterIdx += jump;
-          i += jump - 1;
-
-          // skip last lines if they're all equal
-          if (isEnd) {
-            break;
-          } else {
-            continue;
-          }
-        }
-      }
-
-      var data = this.buildRow_(beforeIdx, beforeEnd, afterIdx, afterEnd, change);
-      beforeIdx = data.newBeforeIdx;
-      afterIdx = data.newAfterIdx;
-      topRows.push(data.row);
-    }
-  }
-
-  return ranges;
-};
 
 differ.prototype.buildView_ = function() {
   var contextSize = this.params.contextSize;
@@ -232,7 +176,6 @@ differ.prototype.buildView_ = function() {
     var afterEnd = opcode[4];
     var rowCount = Math.max(beforeEnd - beforeIdx, afterEnd - afterIdx);
     var topRows = [];
-    var botRows = [];
 
     for (var i = 0; i < rowCount; i++) {
       // Jump
@@ -280,7 +223,6 @@ differ.prototype.buildView_ = function() {
     }
 
     for (var i = 0; i < topRows.length; i++) rows.push(topRows[i]);
-    for (var i = 0; i < botRows.length; i++) rows.push(botRows[i]);
   }
 
   var $container = $('<div class="diff">');
