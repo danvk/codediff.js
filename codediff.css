@@ -30,9 +30,18 @@ table.diff td {
   padding: 2px;
 }
 
+/* Line numbers with thin vertical bars to indicate wrapped lines. */
 .line-no {
   color: #999;
   background-color: #f7f7f7;
+}
+.line-no:first-child {
+  background-image: linear-gradient(to left, #f7f7f7, #f7f7f7 3px, transparent, transparent 6px, #f7f7f7 6px),
+                    linear-gradient(#f7f7f7, #f7f7f7 1.4em, #aaa 1.4em);
+}
+.line-no:last-child {
+  background-image: linear-gradient(to right, #f7f7f7, #f7f7f7 3px, transparent, transparent 6px, #f7f7f7 6px),
+                    linear-gradient(#f7f7f7, #f7f7f7 1.4em, #aaa 1.4em);
 }
 
 table.diff .line-no:first-child {
