@@ -243,6 +243,9 @@ differ.prototype.buildView_ = function() {
 
   var $container = $('<div class="diff">');
   var $table = $('<table class="diff">');
+  $table.append($('<tr>').append(
+      $('<th class="diff-header" colspan=2>').text(this.params.beforeName),
+      $('<th class="diff-header" colspan=2>').text(this.params.afterName)));
 
   rows.forEach(function(row) {
     if (row.length != 3 && row.length != 4) {

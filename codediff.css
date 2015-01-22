@@ -24,12 +24,6 @@ table.diff td {
   vertical-align: top;
 }
 
-.diff-header, .line-no-header {
-  font-weight: bold;
-  border-bottom: 1px solid #ddd;
-  padding: 2px;
-}
-
 /* Line numbers with thin vertical bars to indicate wrapped lines. */
 .line-no {
   color: #999;
