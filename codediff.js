@@ -261,9 +261,11 @@ differ.prototype.buildView_ = function() {
   // Attach event handlers & apply char diffs.
   this.attachHandlers_($container);
 
-  $table.find('.code').each(function(_, el) {
-    differ.addSoftBreaks(el);
-  });
+  if (!this.params.wordWrap) {
+    $table.find('.code').each(function(_, el) {
+      differ.addSoftBreaks(el);
+    });
+  }
 
   return $container.get(0);
 };
