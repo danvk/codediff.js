@@ -123,6 +123,40 @@ differ.prototype.attachHandlers_ = function(el) {
     var $skipTr = $(this).closest('tr');
     $skipTr.replaceWith(newTrs);
   });
+
+  // Hooks for single-column text selection.
+  // See http://stackoverflow.com/a/27530627/388951 for details.
+  $(el).on('mousedown', function(e) {
+    var $td = $(e.target).closest('td'),
+        isLeft = $td.is('.before'),
+        isRight = $td.is('.after');
+    if (!isLeft && !isRight) return;
+
+    el.removeClass('selecting-left selecting-right')
+      .addClass('selecting-' + (isLeft ? 'left' : 'right'));
+  }).on('copy', function(e) {
+    var isLeft = el.is('.selecting-left'),
+        idx = isLeft ? 1 : 2;  // index of <td> within <tr>
+
+    var sel = window.getSelection(),
+        range = sel.getRangeAt(0),
+        doc = range.cloneContents(),
+        nodes = doc.querySelectorAll('td.' + (isLeft ? 'before' : 'after')),
+        text = '';
+
+    if (nodes.length === 0) {
+      text = doc.textContent;
+    } else {
+      [].forEach.call(nodes, function(td, i) {
+        text += (i ? '\n' : '') + td.textContent;
+      });
+    }
+    text = text.replace(/\u200B/g, '');  // remove soft breaks
+
+    var clipboardData = e.originalEvent.clipboardData;
+    clipboardData.setData('text', text);
+    e.preventDefault();
+  });
 };
 
 differ.prototype.buildRow_ = function(beforeIdx, beforeEnd, afterIdx, afterEnd, change) {
@@ -131,8 +165,8 @@ differ.prototype.buildRow_ = function(beforeIdx, beforeEnd, afterIdx, afterEnd, 
   var afterLines = this.params.language ? this.afterLinesHighlighted : this.afterLines;
 
   var els = [];
-  beforeIdx = addCells(els, beforeIdx, beforeEnd, this.params.language, beforeLines, 'before ' + change, beforeIdx + 1);
-  afterIdx = addCells(els, afterIdx, afterEnd, this.params.language, afterLines, 'after ' + change, afterIdx + 1);
+  beforeIdx = addCells(els, beforeIdx, beforeEnd, this.params.language, beforeLines, 'before', change, beforeIdx + 1);
+  afterIdx = addCells(els, afterIdx, afterEnd, this.params.language, afterLines, 'after', change, afterIdx + 1);
 
   if (change == 'replace') {
     differ.addCharacterDiffs_(els[1], els[3], this.params.language);
@@ -174,7 +208,7 @@ differ.prototype.buildView_ = function() {
           var els = [];
           topRows.push(els);
 
-          var $skipEl = $('<td class="skip code"><a href="#">Show ' + jump + ' lines</a></div>');
+          var $skipEl = $('<td class="skip after code"><a href="#">Show ' + jump + ' lines</a></div>');
           $skipEl.data({
             'beforeStartIndex': beforeIdx,
             'afterStartIndex': afterIdx,
@@ -182,7 +216,7 @@ differ.prototype.buildView_ = function() {
           }).attr('line-no', 1 + afterIdx);
 
           els.push($('<td class=line-no>&hellip;</div>').attr('line-no', 1+beforeIdx).get(0));
-          els.push($('<td class="skip code">...</div>').attr('line-no', 1+beforeIdx).get(0));
+          els.push($('<td class="skip before code">...</div>').attr('line-no', 1+beforeIdx).get(0));
           els.push($('<td class=line-no>&hellip;</div>').attr('line-no', 1+afterIdx).get(0));
           els.push($skipEl.get(0));
 
@@ -230,14 +264,14 @@ differ.prototype.buildView_ = function() {
   return $container.get(0);
 };
 
-function addCells(row, tidx, tend, isHtml, textLines, change, line_no) {
+function addCells(row, tidx, tend, isHtml, textLines, side, change, line_no) {
   if (tidx < tend) {
     var txt = textLines[tidx].replace(/\t/g, "\u00a0\u00a0\u00a0\u00a0");
     row.push($('<td class=line-no>')
                   .text(tidx + 1)
                   .attr('line-no', line_no)
                   .get(0));
-    var $code = $('<td>').addClass(change + ' code').attr('line-no', line_no);
+    var $code = $('<td>').addClass(side + ' ' + change + ' code').attr('line-no', line_no);
     if (isHtml) {
       $code.html(txt);
     } else {
@@ -247,7 +281,7 @@ function addCells(row, tidx, tend, isHtml, textLines, change, line_no) {
     return tidx + 1;
   } else {
     row.push($('<td class=line-no>').attr('line-no', line_no).get(0));
-    row.push($('<td class="empty code">').attr('line-no', line_no).get(0));
+    row.push($('<td class="empty code ' + side + '">').attr('line-no', line_no).get(0));
     return tidx;
   }
 }

@@ -74,3 +74,49 @@ table.diff td:nth-child(2) {
 .diff-right-content .char-replace, .diff-right-content .char-insert {
   background-color: #cfc;
 }
+
+/* Single column selection */
+.selecting-left  td,
+.selecting-left  td *,
+.selecting-right td,
+.selecting-right td *
+{
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.selecting-left  td.line-no::selection,
+.selecting-left  td.line-no *::selection,
+.selecting-right td.line-no::selection,
+.selecting-right td.line-no *::selection,
+.selecting-left  td.after::selection,
+.selecting-left  td.after *::selection,
+.selecting-right td.before::selection,
+.selecting-right td.before *::selection
+{
+  background: transparent;
+}
+
+.selecting-left  td.line-no::-moz-selection,
+.selecting-left  td.line-no *::-moz-selection,
+.selecting-right td.line-no::-moz-selection,
+.selecting-right td.line-no *::-moz-selection,
+.selecting-left  td.after::-moz-selection,
+.selecting-left  td.after *::-moz-selection,
+.selecting-right td.before::-moz-selection,
+.selecting-right td.before *::-moz-selection
+{
+  background: transparent;
+}
+
+.selecting-left  td.before,
+.selecting-left  td.before *,
+.selecting-right td.after,
+.selecting-right td.after * {
+  -moz-user-select: text;
+  -webkit-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
