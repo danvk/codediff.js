@@ -98,13 +98,6 @@ differ.highlightText_ = function(text, opt_language) {
  * Attach event listeners, notably for the "show more" links.
  */
 differ.prototype.attachHandlers_ = function(el) {
-  // Synchronize horizontal scrolling.
-  var $wrapperDivs = $(el).find('.diff-wrapper');
-  $wrapperDivs.on('scroll', function(e) {
-    var otherDiv = $wrapperDivs.not(this).get(0);
-    otherDiv.scrollLeft = this.scrollLeft;
-  });
-
   var this_differ = this;
   $(el).on('click', '.skip a', function(e) {
     e.preventDefault();
@@ -115,30 +108,20 @@ differ.prototype.attachHandlers_ = function(el) {
     var beforeEnd = beforeIdx + jump;
     var afterEnd = afterIdx + jump;
     var change = "equal";
-    var newRows = [];
+    var newTrs = [];
     for (var i = 0; i < jump; i++) {
       var data = this_differ.buildRow_(beforeIdx, beforeEnd, afterIdx, afterEnd, change);
       beforeIdx = data.newBeforeIdx;
       afterIdx = data.newAfterIdx;
-      newRows.push(data.row);
+      var row = data.row;
+      var $tr = $('<tr>');
+      $tr.append(row[0], row[1], row[3], row[2]);
+      newTrs.push($tr.get(0));
     }
-
-    console.log(newRows);
 
     // Replace the "skip" rows with real code.
-    var $lefts = $(this).closest('.diff').find('.diff-left').find('[line-no=' + (1+skipData.beforeStartIndex) + ']');
-    var $rights = $(this).closest('.diff').find('.diff-right').find('[line-no=' + (1+skipData.afterStartIndex) + ']');
-
-    if ($lefts.length == 2 && $rights.length == 2) {
-      var els = [$lefts.get(0), $lefts.get(1), $rights.get(0), $rights.get(1)];
-      for (var rowIdx = newRows.length - 1; rowIdx >= 0; rowIdx--) {
-        var row = newRows[rowIdx];
-        for (var i = 0; i < row.length; i++) {
-          $(els[i]).after(row[i]);
-        }
-      }
-      els.forEach(function(el) { $(el).remove(); });
-    }
+    var $skipTr = $(this).closest('tr');
+    $skipTr.replaceWith(newTrs);
   });
 };
 
