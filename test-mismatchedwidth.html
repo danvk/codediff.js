@@ -1,0 +1,126 @@
+<!doctype html>
+<html>
+<head>
+  <!-- A web font both looks nice and ensures consistent pixels across platforms.
+       It's not necessary for codediff.js to function, however. Any font will do. -->
+  <link href='http://fonts.googleapis.com/css?family=Inconsolata' rel='stylesheet' type='text/css'>
+  <link rel=stylesheet href="codediff.css">
+  <style>
+  .line-no, .code {
+    font-family: Courier;
+    font-size: small;
+  }
+  </style>
+
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+</head>
+<body>
+<p>Here's a sample diff rendered with codediff.js:</p>
+<div id="diffview">
+</div>
+
+<script src="difflib.js"></script>
+<script src="codediff.js"></script>
+<script type="text/javascript">
+function renderDiff(diffDiv, contentsBefore, contentsAfter) {
+  diffDiv.appendChild(codediff.buildView(contentsBefore, contentsAfter, {
+    beforeName: 'Short Rows',
+    afterName: 'Long Rows',
+    wordWrap: true
+  }));
+}
+</script>
+<script type="notjavascript" id="before">Hello
+Hello
+Hello
+Hello
+Hello
+Hello
+Hello
+Hello
+Hello
+to the World of Tomorrow
+Here's a line with a difference that's
+
+How's it going?
+
+I'm going to delete this.
+
+Line A
+Line B
+Line C
+Line D
+Line E
+Line F
+Line G
+Line H
+Line I
+Line J
+Line K
+Line L
+Line M
+Line N
+Line O
+Line P
+Line Q
+Line R
+Line S
+Line T
+Line U
+Line V
+Line W
+Line X
+Line Y
+Line Z
+</script>
+<script type="notjavascript" id="after">Hello
+Hello
+Hello
+Hello
+Hello
+Hello
+Hello
+Hello
+Hello
+to the Words of Tomorrow
+Here's a line with a difference that's "hard" to spot without char-by-char diffs
+
+How's it going?
+
+Line A
+Line B
+Line B2
+Line C
+Line D
+Line E
+Line F
+Line G
+Line H
+Line I
+Line J
+Line K
+> Line L2
+Line M
+Line N
+Line O
+Line Q
+Line R
+Line S
+Line T
+Line U
+Line V
+Line W
+Line X
+Line Y
+Line Z
+</script>
+
+<script type="text/javascript">
+var beforeText = $("#before").html();
+var afterText = $("#after").html();
+var diffDiv = $("#diffview").get(0);
+renderDiff(diffDiv, beforeText, afterText);
+</script>
+
+</body>
+</html>
