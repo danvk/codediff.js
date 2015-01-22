@@ -98,13 +98,6 @@ differ.highlightText_ = function(text, opt_language) {
  * Attach event listeners, notably for the "show more" links.
  */
 differ.prototype.attachHandlers_ = function(el) {
-  // Synchronize horizontal scrolling.
-  var $wrapperDivs = $(el).find('.diff-wrapper');
-  $wrapperDivs.on('scroll', function(e) {
-    var otherDiv = $wrapperDivs.not(this).get(0);
-    otherDiv.scrollLeft = this.scrollLeft;
-  });
-
   var this_differ = this;
   $(el).on('click', '.skip a', function(e) {
     e.preventDefault();
@@ -115,28 +108,54 @@ differ.prototype.attachHandlers_ = function(el) {
     var beforeEnd = beforeIdx + jump;
     var afterEnd = afterIdx + jump;
     var change = "equal";
-    var newRows = [];
+    var newTrs = [];
     for (var i = 0; i < jump; i++) {
       var data = this_differ.buildRow_(beforeIdx, beforeEnd, afterIdx, afterEnd, change);
       beforeIdx = data.newBeforeIdx;
       afterIdx = data.newAfterIdx;
-      newRows.push(data.row);
+      var row = data.row;
+      var $tr = $('<tr>');
+      $tr.append(row);
+      newTrs.push($tr.get(0));
     }
 
     // Replace the "skip" rows with real code.
-    var $lefts = $(this).closest('.diff').find('.diff-left').find('[line-no=' + (1+skipData.beforeStartIndex) + ']');
-    var $rights = $(this).closest('.diff').find('.diff-right').find('[line-no=' + (1+skipData.afterStartIndex) + ']');
+    var $skipTr = $(this).closest('tr');
+    $skipTr.replaceWith(newTrs);
+  });
 
-    if ($lefts.length == 2 && $rights.length == 2) {
-      var els = [$lefts.get(0), $lefts.get(1), $rights.get(0), $rights.get(1)];
-      for (var rowIdx = newRows.length - 1; rowIdx >= 0; rowIdx--) {
-        var row = newRows[rowIdx];
-        for (var i = 0; i < row.length; i++) {
-          $(els[i]).after(row[i]);
-        }
-      }
-      els.forEach(function(el) { $(el).remove(); });
+  // Hooks for single-column text selection.
+  // See http://stackoverflow.com/a/27530627/388951 for details.
+  $(el).on('mousedown', function(e) {
+    var $td = $(e.target).closest('td'),
+        isLeft = $td.is('.before'),
+        isRight = $td.is('.after');
+    if (!isLeft && !isRight) return;
+
+    el.removeClass('selecting-left selecting-right')
+      .addClass('selecting-' + (isLeft ? 'left' : 'right'));
+  }).on('copy', function(e) {
+    var isLeft = el.is('.selecting-left'),
+        idx = isLeft ? 1 : 2;  // index of <td> within <tr>
+
+    var sel = window.getSelection(),
+        range = sel.getRangeAt(0),
+        doc = range.cloneContents(),
+        nodes = doc.querySelectorAll('td.' + (isLeft ? 'before' : 'after')),
+        text = '';
+
+    if (nodes.length === 0) {
+      text = doc.textContent;
+    } else {
+      [].forEach.call(nodes, function(td, i) {
+        text += (i ? '\n' : '') + td.textContent;
+      });
     }
+    text = text.replace(/\u200B/g, '');  // remove soft breaks
+
+    var clipboardData = e.originalEvent.clipboardData;
+    clipboardData.setData('text', text);
+    e.preventDefault();
   });
 };
 
@@ -146,11 +165,11 @@ differ.prototype.buildRow_ = function(beforeIdx, beforeEnd, afterIdx, afterEnd, 
   var afterLines = this.params.language ? this.afterLinesHighlighted : this.afterLines;
 
   var els = [];
-  beforeIdx = addCells(els, beforeIdx, beforeEnd, this.params.language, beforeLines, 'before ' + change, beforeIdx + 1);
-  afterIdx = addCells(els, afterIdx, afterEnd, this.params.language, afterLines, 'after ' + change, afterIdx + 1);
+  beforeIdx = addCells(els, beforeIdx, beforeEnd, this.params.language, beforeLines, 'before', change, beforeIdx + 1);
+  afterIdx = addCells(els, afterIdx, afterEnd, this.params.language, afterLines, 'after', change, afterIdx + 1);
 
   if (change == 'replace') {
-    differ.addCharacterDiffs_(els[1], els[3], this.params.language);
+    differ.addCharacterDiffs_(els[1], els[2], this.params.language);
   }
 
   return {
@@ -160,71 +179,8 @@ differ.prototype.buildRow_ = function(beforeIdx, beforeEnd, afterIdx, afterEnd, 
   };
 };
 
-// Construct ranges of lines to show consecutively on either side.
-// The main work of this is factoring out ranges of common lines.
-// Output:
-// [ {change: "equal", left: { start, end }, right: { start, end }}, ... ]
-differ.prototype.buildRanges_ = function() {
-  var contextSize = this.params.contextSize;
-  var ranges = [];
-
-  for (var opcodeIdx = 0; opcodeIdx < this.opcodes.length; opcodeIdx++) {
-    var opcode = this.opcodes[opcodeIdx];
-    var change = opcode[0];  // "equal", "replace", "delete", "insert"
-    var beforeIdx = opcode[1];
-    var beforeEnd = opcode[2];
-    var afterIdx = opcode[3];
-    var afterEnd = opcode[4];
-    var rowCount = Math.max(beforeEnd - beforeIdx, afterEnd - afterIdx);
-    var topRows = [];
-    var botRows = [];
-
-    for (var i = 0; i < rowCount; i++) {
-      // Jump
-      if (contextSize && this.opcodes.length > 1 && change == 'equal' &&
-          ((opcodeIdx > 0 && i == contextSize) ||
-           (opcodeIdx == 0 && i == 0))) {
-        var jump = rowCount - ((opcodeIdx == 0 ? 1 : 2) * contextSize);
-        var isEnd = (opcodeIdx + 1 == this.opcodes.length);
-        if (isEnd) {
-          jump += (contextSize - 1);
-        }
-        if (jump > 1) {
-          ranges.push({
-            type: 'skip',
-            left: { start: beforeIdx, end: beforeIdx + jump },
-            right: { start: afterIdx, end: afterIdx + jump }
-          });
-
-          beforeIdx += jump;
-          afterIdx += jump;
-          i += jump - 1;
-
-          // skip last lines if they're all equal
-          if (isEnd) {
-            break;
-          } else {
-            continue;
-          }
-        }
-      }
-
-      var data = this.buildRow_(beforeIdx, beforeEnd, afterIdx, afterEnd, change);
-      beforeIdx = data.newBeforeIdx;
-      afterIdx = data.newAfterIdx;
-      topRows.push(data.row);
-    }
-  }
-
-  return ranges;
-};
 
 differ.prototype.buildView_ = function() {
-  var $leftLineDiv = $('<div class="diff-line-no diff-left diff-left-line-no">');
-  var $leftContent = $('<div class="diff-content diff-left-content">');
-  var $rightLineDiv = $('<div class="diff-line-no diff-right diff-right-line-no">');
-  var $rightContent = $('<div class="diff-content diff-right-content">');
-
   var contextSize = this.params.contextSize;
   var rows = [];
 
@@ -237,7 +193,6 @@ differ.prototype.buildView_ = function() {
     var afterEnd = opcode[4];
     var rowCount = Math.max(beforeEnd - beforeIdx, afterEnd - afterIdx);
     var topRows = [];
-    var botRows = [];
 
     for (var i = 0; i < rowCount; i++) {
       // Jump
@@ -253,17 +208,16 @@ differ.prototype.buildView_ = function() {
           var els = [];
           topRows.push(els);
 
-          var $skipEl = $('<div class="skip code"><a href="#">Show ' + jump + ' lines</a></div>');
+          var $skipEl = $('<td colspan="2" class="skip code"><a href="#">Show ' + jump + ' more lines</a></div>');
           $skipEl.data({
             'beforeStartIndex': beforeIdx,
             'afterStartIndex': afterIdx,
             'jumpLength': jump,
-          }).attr('line-no', 1 + afterIdx);
+          });
 
-          els.push($('<div class=line-no>&hellip;</div>').attr('line-no', 1+beforeIdx).get(0));
-          els.push($('<div class="skip code">...</div>').attr('line-no', 1+beforeIdx).get(0));
-          els.push($('<div class=line-no>&hellip;</div>').attr('line-no', 1+afterIdx).get(0));
+          els.push($('<td class=line-no>&hellip;</div>').get(0));
           els.push($skipEl.get(0));
+          els.push($('<td class=line-no>&hellip;</div>').get(0));
 
           beforeIdx += jump;
           afterIdx += jump;
@@ -285,64 +239,89 @@ differ.prototype.buildView_ = function() {
     }
 
     for (var i = 0; i < topRows.length; i++) rows.push(topRows[i]);
-    for (var i = 0; i < botRows.length; i++) rows.push(botRows[i]);
   }
 
   var $container = $('<div class="diff">');
-
-  $leftLineDiv.append($('<div class="line-no-header">&nbsp;</div>'));
-  $rightLineDiv.append($('<div class="line-no-header">&nbsp;</div>'));
-  $leftContent.append($('<div class="diff-header">').text(this.params.beforeName));
-  $rightContent.append($('<div class="diff-header">').text(this.params.afterName));
-
-  $container.append(
-      $('<div class="diff-column diff-left">').append(
-        $leftLineDiv,
-        $('<div class="diff-remainder">').append(
-          $('<div class="diff-wrapper diff-left diff-column-width">').append($leftContent))
-      ),
-      $('<div class="diff-column diff-right">').append(
-        $rightLineDiv,
-        $('<div class="diff-remainder">').append(
-          $('<div class="diff-wrapper diff-right diff-column-width">').append($rightContent))
-      )
-      );
+  var $table = $('<table class="diff">');
+  $table.append($('<tr>').append(
+      $('<th class="diff-header" colspan=2>').text(this.params.beforeName),
+      $('<th class="diff-header" colspan=2>').text(this.params.afterName)));
 
   rows.forEach(function(row) {
-    if (row.length != 4) throw "Invalid row: " + row;
+    if (row.length != 3 && row.length != 4) {
+      throw "Invalid row: " + row;
+    }
 
-    $leftLineDiv.append(row[0]);
-    $leftContent.append(row[1]);
-    $rightLineDiv.append(row[2]);
-    $rightContent.append(row[3]);
+    var $tr = $('<tr>');
+    $tr.append(row);
+    $table.append($tr);
   });
+  $container.append($table);
 
+  // Attach event handlers & apply char diffs.
   this.attachHandlers_($container);
+
+  if (!this.params.wordWrap) {
+    $table.find('.code').each(function(_, el) {
+      differ.addSoftBreaks(el);
+    });
+  }
 
   return $container.get(0);
 };
 
-function addCells(row, tidx, tend, isHtml, textLines, change, line_no) {
+function addCells(row, tidx, tend, isHtml, textLines, side, change, line_no) {
+  var newIdx = 0,
+      lineNoTd, codeTd;
   if (tidx < tend) {
     var txt = textLines[tidx].replace(/\t/g, "\u00a0\u00a0\u00a0\u00a0");
-    row.push($('<div class=line-no>')
+    lineNoTd = $('<td class=line-no>')
                   .text(tidx + 1)
-                  .attr('line-no', line_no)
-                  .get(0));
-    var $code = $('<div>').addClass(change + ' code').attr('line-no', line_no);
+                  .get(0);
+    var $code = $('<td>').addClass(side + ' ' + change + ' code');
     if (isHtml) {
       $code.html(txt);
     } else {
       $code.text(txt);
     }
-    row.push($code.get(0));
-    return tidx + 1;
+    codeTd = $code.get(0);
+    newIdx = tidx + 1;
   } else {
-    row.push($('<div class=line-no>').attr('line-no', line_no).get(0));
-    row.push($('<div class="empty code">').attr('line-no', line_no).get(0));
-    return tidx;
+    var lineNoTd = $('<td class=line-no>').get(0),
+        codeTd = $('<td class="empty code ' + side + '">').get(0);
+    newIdx = tidx;
+  }
+  if (side == 'before') {
+    row.push(lineNoTd)
+    row.push(codeTd)
+  } else {
+    row.push(codeTd)
+    row.push(lineNoTd)
+  }
+  return newIdx;
+}
+
+function walkTheDOM(node, func) {
+  func(node);
+  node = node.firstChild;
+  while (node) {
+    walkTheDOM(node, func);
+    node = node.nextSibling;
   }
 }
+
+/**
+ * Adds soft wrap markers between all characters in a DOM element.
+ */
+differ.addSoftBreaks = function(el) {
+  var softBreak = '\u200B';
+  walkTheDOM(el, function(node) {
+    if (node.nodeType !== 3) return;
+    var text = node.data;
+    text = text.split('').join(softBreak);
+    node.nodeValue = text;
+  });
+};
 
 differ.htmlTextMapper = function(text, html) {
   this.text_ = text;
@@ -548,7 +527,6 @@ differ.addCharacterDiffs_ = function(beforeCell, afterCell) {
   // wrap complete (balanced) DOM trees.
   var beforeHtml = $(beforeCell).html(),
       afterHtml = $(afterCell).html();
-  var m = differ.htmlTextMapper.prototype.getHtmlSubstring;
   var beforeMapper = new differ.htmlTextMapper(beforeText, beforeHtml);
   var afterMapper = new differ.htmlTextMapper(afterText, afterHtml);
 
