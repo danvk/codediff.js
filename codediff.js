@@ -169,7 +169,7 @@ differ.prototype.buildRow_ = function(beforeIdx, beforeEnd, afterIdx, afterEnd, 
   afterIdx = addCells(els, afterIdx, afterEnd, this.params.language, afterLines, 'after', change, afterIdx + 1);
 
   if (change == 'replace') {
-    differ.addCharacterDiffs_(els[1], els[3], this.params.language);
+    differ.addCharacterDiffs_(els[1], els[2], this.params.language);
   }
 
   return {

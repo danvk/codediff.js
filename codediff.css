@@ -69,18 +69,18 @@ table.diff td:nth-child(2) {
   background-color: #efe;
 }
 
-.diff-left-content .replace {
+.before.replace {
   background-color: #fee;
 }
-.diff-right-content .replace {
+.after.replace {
   background-color: #efe;
 }
 
-.diff-left-content .char-replace, .diff-left-content .char-delete {
+.before .char-replace, .before .char-delete {
   background-color: #fcc;
 }
 
-.diff-right-content .char-replace, .diff-right-content .char-insert {
+.after .char-replace, .after .char-insert {
   background-color: #cfc;
 }
 
