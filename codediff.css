@@ -2,13 +2,26 @@
   box-sizing: border-box;
 }
 
-.diff-column-width {
-  max-width: 101ch;
-  min-width: 40ch;
-  width: 100%;
+div.diff {
+  max-width: 100%;
+  display: table;
 }
-.diff-column {
-  max-width: 50%;
+
+table.diff {
+  width: 100%;
+  border-spacing: 0;
+}
+
+td.code {
+  /* this is the max width of each column of code. */
+  /* for table cells, `width` behaves more like `max-width`. */
+  width: 61ch;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+table.diff td {
+  vertical-align: top;
 }
 
 .diff-header, .line-no-header {
@@ -17,65 +30,27 @@
   padding: 2px;
 }
 
-.diff-line-no {
-  display: table;  /* shrink to fit longest line number */
-}
-.diff-left .diff-line-no {
-  float: left;
-}
-.diff-right .diff-line-no {
-  float: right;
-}
-.diff-remainder {
-  overflow: hidden;  /* see http://stackoverflow.com/questions/5540485/how-to-make-an-inline-block-element-fill-the-remainder-of-the-line */
-}
-
 .line-no {
   color: #999;
   background-color: #f7f7f7;
 }
 
-.diff-left .line-no {
+table.diff .line-no:first-child {
   border-right: 1px solid #ddd;
   text-align: right;
 }
-.diff-right .line-no {
+table.diff .line-no:last-child {
   border-left: 1px solid #ddd;
   text-align: left;
 }
-.diff-left.diff-column {
+table.diff td:nth-child(2) {
   border-right: 1px solid #ddd;
-}
-
-.diff-line-no, .diff-wrapper, .diff-column {
-  display: inline-block;
-  vertical-align: top;
-}
-
-.diff-wrapper {
-  overflow-x: auto;
-  overflow-y: hidden;  /* shouldn't happen, but we sometimes get a pixel. */
-}
-
-.diff-content {
-  display: table;  /* "expand to fit" */
-  min-width: 100%;
 }
 
 .line-no, .code {
   padding: 2px;
   height: 1.11em;
-  white-space: pre;
   font-family: monospace;
-}
-
-.diff {
-  white-space: nowrap;
-}
-
-.diff-wrapper, .diff-wrapper > div {
-  display: inline-block;
-  vertical-align: top;
 }
 
 .diff .delete {

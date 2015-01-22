@@ -220,11 +220,6 @@ differ.prototype.buildRanges_ = function() {
 };
 
 differ.prototype.buildView_ = function() {
-  var $leftLineDiv = $('<div class="diff-line-no diff-left diff-left-line-no">');
-  var $leftContent = $('<div class="diff-content diff-left-content">');
-  var $rightLineDiv = $('<div class="diff-line-no diff-right diff-right-line-no">');
-  var $rightContent = $('<div class="diff-content diff-right-content">');
-
   var contextSize = this.params.contextSize;
   var rows = [];
 
@@ -253,16 +248,16 @@ differ.prototype.buildView_ = function() {
           var els = [];
           topRows.push(els);
 
-          var $skipEl = $('<div class="skip code"><a href="#">Show ' + jump + ' lines</a></div>');
+          var $skipEl = $('<td class="skip code"><a href="#">Show ' + jump + ' lines</a></div>');
           $skipEl.data({
             'beforeStartIndex': beforeIdx,
             'afterStartIndex': afterIdx,
             'jumpLength': jump,
           }).attr('line-no', 1 + afterIdx);
 
-          els.push($('<div class=line-no>&hellip;</div>').attr('line-no', 1+beforeIdx).get(0));
-          els.push($('<div class="skip code">...</div>').attr('line-no', 1+beforeIdx).get(0));
-          els.push($('<div class=line-no>&hellip;</div>').attr('line-no', 1+afterIdx).get(0));
+          els.push($('<td class=line-no>&hellip;</div>').attr('line-no', 1+beforeIdx).get(0));
+          els.push($('<td class="skip code">...</div>').attr('line-no', 1+beforeIdx).get(0));
+          els.push($('<td class=line-no>&hellip;</div>').attr('line-no', 1+afterIdx).get(0));
           els.push($skipEl.get(0));
 
           beforeIdx += jump;
@@ -289,35 +284,23 @@ differ.prototype.buildView_ = function() {
   }
 
   var $container = $('<div class="diff">');
-
-  $leftLineDiv.append($('<div class="line-no-header">&nbsp;</div>'));
-  $rightLineDiv.append($('<div class="line-no-header">&nbsp;</div>'));
-  $leftContent.append($('<div class="diff-header">').text(this.params.beforeName));
-  $rightContent.append($('<div class="diff-header">').text(this.params.afterName));
-
-  $container.append(
-      $('<div class="diff-column diff-left">').append(
-        $leftLineDiv,
-        $('<div class="diff-remainder">').append(
-          $('<div class="diff-wrapper diff-left diff-column-width">').append($leftContent))
-      ),
-      $('<div class="diff-column diff-right">').append(
-        $rightLineDiv,
-        $('<div class="diff-remainder">').append(
-          $('<div class="diff-wrapper diff-right diff-column-width">').append($rightContent))
-      )
-      );
+  var $table = $('<table class="diff">');
 
   rows.forEach(function(row) {
     if (row.length != 4) throw "Invalid row: " + row;
 
-    $leftLineDiv.append(row[0]);
-    $leftContent.append(row[1]);
-    $rightLineDiv.append(row[2]);
-    $rightContent.append(row[3]);
+    var $tr = $('<tr>');
+    $tr.append(row[0], row[1], row[3], row[2]);
+    $table.append($tr);
   });
+  $container.append($table);
 
+  // Attach event handlers & apply char diffs.
   this.attachHandlers_($container);
+
+  $table.find('.code').each(function(_, el) {
+    differ.addSoftBreaks(el);
+  });
 
   return $container.get(0);
 };
@@ -325,11 +308,11 @@ differ.prototype.buildView_ = function() {
 function addCells(row, tidx, tend, isHtml, textLines, change, line_no) {
   if (tidx < tend) {
     var txt = textLines[tidx].replace(/\t/g, "\u00a0\u00a0\u00a0\u00a0");
-    row.push($('<div class=line-no>')
+    row.push($('<td class=line-no>')
                   .text(tidx + 1)
                   .attr('line-no', line_no)
                   .get(0));
-    var $code = $('<div>').addClass(change + ' code').attr('line-no', line_no);
+    var $code = $('<td>').addClass(change + ' code').attr('line-no', line_no);
     if (isHtml) {
       $code.html(txt);
     } else {
@@ -338,11 +321,33 @@ function addCells(row, tidx, tend, isHtml, textLines, change, line_no) {
     row.push($code.get(0));
     return tidx + 1;
   } else {
-    row.push($('<div class=line-no>').attr('line-no', line_no).get(0));
-    row.push($('<div class="empty code">').attr('line-no', line_no).get(0));
+    row.push($('<td class=line-no>').attr('line-no', line_no).get(0));
+    row.push($('<td class="empty code">').attr('line-no', line_no).get(0));
     return tidx;
   }
 }
+
+function walkTheDOM(node, func) {
+  func(node);
+  node = node.firstChild;
+  while (node) {
+    walkTheDOM(node, func);
+    node = node.nextSibling;
+  }
+}
+
+/**
+ * Adds soft wrap markers between all characters in a DOM element.
+ */
+differ.addSoftBreaks = function(el) {
+  var softBreak = '\u200B';
+  walkTheDOM(el, function(node) {
+    if (node.nodeType !== 3) return;
+    var text = node.data;
+    text = text.split('').join(softBreak);
+    node.nodeValue = text;
+  });
+};
 
 differ.htmlTextMapper = function(text, html) {
   this.text_ = text;
@@ -548,7 +553,6 @@ differ.addCharacterDiffs_ = function(beforeCell, afterCell) {
   // wrap complete (balanced) DOM trees.
   var beforeHtml = $(beforeCell).html(),
       afterHtml = $(afterCell).html();
-  var m = differ.htmlTextMapper.prototype.getHtmlSubstring;
   var beforeMapper = new differ.htmlTextMapper(beforeText, beforeHtml);
   var afterMapper = new differ.htmlTextMapper(afterText, afterHtml);
 
