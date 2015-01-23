@@ -26,7 +26,8 @@ function renderDiff(diffDiv, contentsBefore, contentsAfter) {
   diffDiv.appendChild(codediff.buildView(contentsBefore, contentsAfter, {
     beforeName: 'Short Rows',
     afterName: 'Long Rows',
-    wordWrap: true
+    wordWrap: true,
+    minJumpSize: 0
   }));
 }
 </script>

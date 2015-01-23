@@ -3,6 +3,7 @@ var codediff = (function() {
 var differ = function(beforeText, afterText, userParams) {
   var defaultParams = {
     contextSize: 3,
+    minJumpSize: 10,
     language: null,
     beforeName: "Before",
     afterName: "After"
@@ -14,13 +15,17 @@ var differ = function(beforeText, afterText, userParams) {
   this.afterLines = afterText ? difflib.stringAsLines(afterText) : [];
   var sm = new difflib.SequenceMatcher(this.beforeLines, this.afterLines);
   var opcodes = sm.get_opcodes();
-  this.diffRanges = differ.opcodesToDiffRanges(opcodes, this.params.contextSize, 0);
+
+  // TODO: don't store the diff ranges -- they're only used once in buildView.
+  this.diffRanges = differ.opcodesToDiffRanges(
+      opcodes, this.params.contextSize, this.params.minJumpSize);
 
   if (this.params.language) {
     var lang = this.params.language;
     this.beforeLinesHighlighted = differ.highlightText_(beforeText, lang);
     this.afterLinesHighlighted = differ.highlightText_(afterText, lang);
   }
+  // TODO: from this point on language shouldn't need to be used.
 };
 
 differ.prototype.maxLineNumber = function() {
@@ -240,9 +245,9 @@ differ.prototype.buildView_ = function() {
             afterIdx = (j < numAfterRows) ? range.after[0] + j : null;
         $table.append(differ.buildRowTr_(
             type,
-            beforeIdx && 1 + beforeIdx,
+            (beforeIdx != null) && 1 + beforeIdx,
             beforeLines[beforeIdx],
-            afterIdx && 1 + afterIdx,
+            (afterIdx != null) && 1 + afterIdx,
             afterLines[afterIdx],
             language));
       }
