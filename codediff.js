@@ -99,25 +99,26 @@ differ.highlightText_ = function(text, opt_language) {
  * Attach event listeners, notably for the "show more" links.
  */
 differ.prototype.attachHandlers_ = function(el) {
-  var this_differ = this;
+  // TODO: gross duplication with buildView_
+  var language = this.params.language,
+      beforeLines = language ? this.beforeLinesHighlighted : this.beforeLines,
+      afterLines = language ? this.afterLinesHighlighted : this.afterLines;
   $(el).on('click', '.skip a', function(e) {
     e.preventDefault();
     var skipData = $(this).closest('.skip').data();
     var beforeIdx = skipData.beforeStartIndex;
     var afterIdx = skipData.afterStartIndex;
     var jump = skipData.jumpLength;
-    var beforeEnd = beforeIdx + jump;
-    var afterEnd = afterIdx + jump;
     var change = "equal";
     var newTrs = [];
     for (var i = 0; i < jump; i++) {
-      var data = this_differ.buildRow_(beforeIdx, beforeEnd, afterIdx, afterEnd, change);
-      beforeIdx = data.newBeforeIdx;
-      afterIdx = data.newAfterIdx;
-      var row = data.row;
-      var $tr = $('<tr>');
-      $tr.append(row);
-      newTrs.push($tr.get(0));
+      newTrs.push(differ.buildRowTr_(
+        'equal',
+        beforeIdx + i + 1,
+        beforeLines[beforeIdx + i],
+        afterIdx + i + 1,
+        afterLines[afterIdx + i],
+        language));
     }
 
     // Replace the "skip" rows with real code.
@@ -160,60 +161,6 @@ differ.prototype.attachHandlers_ = function(el) {
   });
 };
 
-/*
-differ.prototype.buildRow_ = function(beforeIdx, beforeEnd, afterIdx, afterEnd, change) {
-  // TODO(danvk): move this logic into addCells() or get rid of it.
-  var beforeLines = this.params.language ? this.beforeLinesHighlighted : this.beforeLines;
-  var afterLines = this.params.language ? this.afterLinesHighlighted : this.afterLines;
-
-  var els = [];
-  beforeIdx = addCells(els, beforeIdx, beforeEnd, this.params.language, beforeLines, 'before', change, beforeIdx + 1);
-  afterIdx = addCells(els, afterIdx, afterEnd, this.params.language, afterLines, 'after', change, afterIdx + 1);
-
-  if (change == 'replace') {
-    differ.addCharacterDiffs_(els[1], els[2], this.params.language);
-  }
-
-  return {
-    row: els,
-    newBeforeIdx: beforeIdx,
-    newAfterIdx: afterIdx
-  };
-};
-
-function addCells(row, tidx, tend, isHtml, textLines, side, change, line_no) {
-  var newIdx = 0,
-      lineNoTd, codeTd;
-  if (tidx < tend) {
-    var txt = textLines[tidx].replace(/\t/g, "\u00a0\u00a0\u00a0\u00a0");
-    lineNoTd = $('<td class=line-no>')
-                  .text(tidx + 1)
-                  .get(0);
-    var $code = $('<td>').addClass(side + ' ' + change + ' code');
-    if (isHtml) {
-      $code.html(txt);
-    } else {
-      $code.text(txt);
-    }
-    codeTd = $code.get(0);
-    newIdx = tidx + 1;
-  } else {
-    var lineNoTd = $('<td class=line-no>').get(0),
-        codeTd = $('<td class="empty code ' + side + '">').get(0);
-    newIdx = tidx;
-  }
-  if (side == 'before') {
-    row.push(lineNoTd)
-    row.push(codeTd)
-  } else {
-    row.push(codeTd)
-    row.push(lineNoTd)
-  }
-  return newIdx;
-}
-*/
-
-
 /**
  * Create a single row in the table. Adds character diffs if required.
  */
@@ -252,11 +199,11 @@ differ.buildRowTr_ = function(type, beforeLineNum, beforeTextOrHtml, afterLineNu
 differ.buildSkipTr_ = function(beforeIdx, afterIdx, numRowsSkipped) {
   var $tr = $(
     '<tr>' +
-      '<td class="line=no">&hellip;</td>' +
+      '<td class="line-no">&hellip;</td>' +
       '<td colspan="2" class="skip code">' +
         '<a href="#">Show ' + numRowsSkipped + ' more lines</a>' +
       '</td>' +
-      '<td class="line=no">&hellip;</td>' +
+      '<td class="line-no">&hellip;</td>' +
     '</tr>');
   $tr.find('.skip').data({
     'beforeStartIndex': beforeIdx,
@@ -302,9 +249,6 @@ differ.prototype.buildView_ = function() {
     }
   }
 
-  // Attach event handlers & apply char diffs.
-  this.attachHandlers_($container);
-
   // TODO: move into buildRowTr_?
   if (!this.params.wordWrap) {
     $table.find('.code').each(function(_, el) {
@@ -314,91 +258,8 @@ differ.prototype.buildView_ = function() {
 
   var $container = $('<div class="diff">');
   $container.append($table);
-  return $container.get(0);
-
-  for (var opcodeIdx = 0; opcodeIdx < this.opcodes.length; opcodeIdx++) {
-    var opcode = this.opcodes[opcodeIdx];
-    var change = opcode[0];  // "equal", "replace", "delete", "insert"
-    var beforeIdx = opcode[1];
-    var beforeEnd = opcode[2];
-    var afterIdx = opcode[3];
-    var afterEnd = opcode[4];
-    var rowCount = Math.max(beforeEnd - beforeIdx, afterEnd - afterIdx);
-    var topRows = [];
-
-    for (var i = 0; i < rowCount; i++) {
-      // Jump
-      if (contextSize && this.opcodes.length > 1 && change == 'equal' &&
-          ((opcodeIdx > 0 && i == contextSize) ||
-           (opcodeIdx == 0 && i == 0))) {
-        var jump = rowCount - ((opcodeIdx == 0 ? 1 : 2) * contextSize);
-        var isEnd = (opcodeIdx + 1 == this.opcodes.length);
-        if (isEnd) {
-          jump += (contextSize - 1);
-        }
-        if (jump > 1) {
-          var els = [];
-          topRows.push(els);
-
-          var $skipEl = $('<td colspan="2" class="skip code"><a href="#">Show ' + jump + ' more lines</a></div>');
-          $skipEl.data({
-            'beforeStartIndex': beforeIdx,
-            'afterStartIndex': afterIdx,
-            'jumpLength': jump,
-          });
-
-          els.push($('<td class=line-no>&hellip;</div>').get(0));
-          els.push($skipEl.get(0));
-          els.push($('<td class=line-no>&hellip;</div>').get(0));
-
-          beforeIdx += jump;
-          afterIdx += jump;
-          i += jump - 1;
-
-          // skip last lines if they're all equal
-          if (isEnd) {
-            break;
-          } else {
-            continue;
-          }
-        }
-      }
-
-      var data = this.buildRow_(beforeIdx, beforeEnd, afterIdx, afterEnd, change);
-      beforeIdx = data.newBeforeIdx;
-      afterIdx = data.newAfterIdx;
-      topRows.push(data.row);
-    }
-
-    for (var i = 0; i < topRows.length; i++) rows.push(topRows[i]);
-  }
-
-  var $container = $('<div class="diff">');
-  var $table = $('<table class="diff">');
-  $table.append($('<tr>').append(
-      $('<th class="diff-header" colspan=2>').text(this.params.beforeName),
-      $('<th class="diff-header" colspan=2>').text(this.params.afterName)));
-
-  rows.forEach(function(row) {
-    if (row.length != 3 && row.length != 4) {
-      throw "Invalid row: " + row;
-    }
-
-    var $tr = $('<tr>');
-    $tr.append(row);
-    $table.append($tr);
-  });
-  $container.append($table);
-
   // Attach event handlers & apply char diffs.
   this.attachHandlers_($container);
-
-  if (!this.params.wordWrap) {
-    $table.find('.code').each(function(_, el) {
-      differ.addSoftBreaks(el);
-    });
-  }
-
   return $container.get(0);
 };
 
