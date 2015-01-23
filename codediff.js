@@ -13,7 +13,8 @@ var differ = function(beforeText, afterText, userParams) {
   this.beforeLines = beforeText ? difflib.stringAsLines(beforeText) : [];
   this.afterLines = afterText ? difflib.stringAsLines(afterText) : [];
   var sm = new difflib.SequenceMatcher(this.beforeLines, this.afterLines);
-  this.opcodes = sm.get_opcodes();
+  var opcodes = sm.get_opcodes();
+  this.diffRanges = differ.opcodesToDiffRanges(opcodes, this.params.contextSize, 0);
 
   if (this.params.language) {
     var lang = this.params.language;
@@ -159,6 +160,7 @@ differ.prototype.attachHandlers_ = function(el) {
   });
 };
 
+/*
 differ.prototype.buildRow_ = function(beforeIdx, beforeEnd, afterIdx, afterEnd, change) {
   // TODO(danvk): move this logic into addCells() or get rid of it.
   var beforeLines = this.params.language ? this.beforeLinesHighlighted : this.beforeLines;
@@ -209,13 +211,110 @@ function addCells(row, tidx, tend, isHtml, textLines, side, change, line_no) {
   }
   return newIdx;
 }
+*/
 
+
+/**
+ * Create a single row in the table. Adds character diffs if required.
+ */
+differ.buildRowTr_ = function(type, beforeLineNum, beforeTextOrHtml, afterLineNum, afterTextOrHtml, language) {
+  var $makeCodeTd = function(textOrHtml) {
+    if (textOrHtml == null) {
+      return $('<td class="empty code">');
+    }
+    textOrHtml = textOrHtml.replace(/\t/g, "\u00a0\u00a0\u00a0\u00a0");
+    var $td = $('<td class="code">').addClass(type);
+    if (language) {
+      $td.html(textOrHtml);
+    } else {
+      $td.text(textOrHtml);
+    }
+    return $td;
+  };
+
+  var cells = [
+    $('<td class=line-no>').text(beforeLineNum || '').get(0),
+    $makeCodeTd(beforeTextOrHtml).addClass('before').get(0),
+    $makeCodeTd(afterTextOrHtml).addClass('after').get(0),
+    $('<td class=line-no>').text(afterLineNum || '').get(0)
+  ];
+  if (type == 'replace') {
+    differ.addCharacterDiffs_(cells[1], cells[2], language);
+  }
+
+  return $('<tr>').append(cells).get(0);
+};
+
+/**
+ * Create a "skip" row with a link to expand.
+ * beforeIdx and afterIdx are the indices of the first lines skipped.
+ */
+differ.buildSkipTr_ = function(beforeIdx, afterIdx, numRowsSkipped) {
+  var $tr = $(
+    '<tr>' +
+      '<td class="line=no">&hellip;</td>' +
+      '<td colspan="2" class="skip code">' +
+        '<a href="#">Show ' + numRowsSkipped + ' more lines</a>' +
+      '</td>' +
+      '<td class="line=no">&hellip;</td>' +
+    '</tr>');
+  $tr.find('.skip').data({
+    'beforeStartIndex': beforeIdx,
+    'afterStartIndex': afterIdx,
+    'jumpLength': numRowsSkipped
+  });
+  return $tr.get(0);
+};
 
 differ.prototype.buildView_ = function() {
-  var contextSize = this.params.contextSize;
-  var rows = [];
+  // TODO: is this distinction necessary?
+  var language = this.params.language,
+      beforeLines = language ? this.beforeLinesHighlighted : this.beforeLines,
+      afterLines = language ? this.afterLinesHighlighted : this.afterLines;
 
-  window.opcodes = this.opcodes;
+  var $table = $('<table class="diff">');
+  $table.append($('<tr>').append(
+      $('<th class="diff-header" colspan=2>').text(this.params.beforeName),
+      $('<th class="diff-header" colspan=2>').text(this.params.afterName)));
+
+  for (var i = 0; i < this.diffRanges.length; i++) {
+    var range = this.diffRanges[i],
+        type = range.type,
+        numBeforeRows = range.before[1] - range.before[0],
+        numAfterRows = range.after[1] - range.after[0],
+        numRows = Math.max(numBeforeRows, numAfterRows);
+
+    if (type == 'skip') {
+      $table.append(
+          differ.buildSkipTr_(range.before[0], range.after[0], numRows));
+    } else {
+      for (var j = 0; j < numRows; j++) {
+        var beforeIdx = (j < numBeforeRows) ? range.before[0] + j : null,
+            afterIdx = (j < numAfterRows) ? range.after[0] + j : null;
+        $table.append(differ.buildRowTr_(
+            type,
+            beforeIdx && 1 + beforeIdx,
+            beforeLines[beforeIdx],
+            afterIdx && 1 + afterIdx,
+            afterLines[afterIdx],
+            language));
+      }
+    }
+  }
+
+  // Attach event handlers & apply char diffs.
+  this.attachHandlers_($container);
+
+  // TODO: move into buildRowTr_?
+  if (!this.params.wordWrap) {
+    $table.find('.code').each(function(_, el) {
+      differ.addSoftBreaks(el);
+    });
+  }
+
+  var $container = $('<div class="diff">');
+  $container.append($table);
+  return $container.get(0);
 
   for (var opcodeIdx = 0; opcodeIdx < this.opcodes.length; opcodeIdx++) {
     var opcode = this.opcodes[opcodeIdx];
