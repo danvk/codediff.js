@@ -14,7 +14,7 @@ QUnit.test('generates same diff ranges as jsdifflib', function(assert) {
     ["equal",  32,43,30,41]
   ]
 
-  var ranges = codediff.opcodesToDiffRanges(opcodes, 3);
+  var ranges = codediff.opcodesToDiffRanges(opcodes, 3, 0);
   assert.deepEqual(ranges, [
     {type: 'skip',    before: [ 0, 6],  after: [ 0,  6]},
     {type: 'equal',   before: [ 6, 9],  after: [ 6,  9]},
@@ -30,6 +30,6 @@ QUnit.test('generates same diff ranges as jsdifflib', function(assert) {
     {type: 'equal',   before: [28, 31], after: [27, 30]},
     {type: 'delete',  before: [31, 32], after: [30, 30]},
     {type: 'equal',   before: [32, 35], after: [30, 33]},
-    {type: 'skip',    before: [35, 42], after: [33, 40]}
+    {type: 'skip',    before: [35, 43], after: [33, 41]}
   ]);
 });

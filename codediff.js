@@ -308,83 +308,61 @@ differ.prototype.buildView_ = function() {
 // Output is a list of diff ranges which corresponds precisely to the view, e.g.
 // 'skip', 'insert', 'replace', 'delete' and 'equal'.
 // Outputs are {type, before:[start,limit], after:[start,limit]} tuples.
-differ.opcodesToDiffRanges = function(opcodes, contextSize) {
+differ.opcodesToDiffRanges = function(opcodes, contextSize, minJumpSize) {
   var ranges = [];
-  for (var opcodeIdx = 0; opcodeIdx < opcodes.length; opcodeIdx++) {
-    var opcode = opcodes[opcodeIdx];
+
+  for (var i = 0; i < opcodes.length; i++) {
+    var opcode = opcodes[i];
     var change = opcode[0];  // "equal", "replace", "delete", "insert"
     var beforeIdx = opcode[1];
     var beforeEnd = opcode[2];
     var afterIdx = opcode[3];
     var afterEnd = opcode[4];
-    var rowCount = Math.max(beforeEnd - beforeIdx, afterEnd - afterIdx);
-    var topRanges = [];
-    for (var i = 0; i < rowCount; i++) {
-      // Jump
-      if (contextSize && opcodes.length > 1 && change == 'equal' &&
-          ((opcodeIdx > 0 && i == contextSize) ||
-           (opcodeIdx == 0 && i == 0))) {
-        var jump = rowCount - ((opcodeIdx == 0 ? 1 : 2) * contextSize);
-        var isEnd = (opcodeIdx + 1 == opcodes.length);
-        if (isEnd) {
-          jump += (contextSize - 1);
-        }
-        if (jump > 1) {
-          topRanges.push({
-            type:'skip', 
-            before: [beforeIdx, beforeIdx + jump],
-            after: [afterIdx, afterIdx + jump]
-          });
-          beforeIdx += jump;
-          afterIdx += jump;
-          i += jump - 1;
+    var range = {
+          type: change,
+          before: [beforeIdx, beforeEnd],
+          after: [afterIdx, afterEnd]
+        };
+    if (change != 'equal') {
+      ranges.push(range);
+      continue;
+    }
 
-          // skip last lines if they're all equal
-          if (isEnd) {
-            break;
-          } else {
-            continue;
-          }
-        }
-      }
+    // Should this "equal" range have a jump inserted?
+    // First remove `contextSize` lines from either end.
+    // If this leaves more than minJumpSize rows, then splice in a jump.
+    var rowCount = beforeEnd - beforeIdx,  // would be same for after{End,Idx}
+        isStart = (i == 0),
+        isEnd = (i == opcodes.length - 1),
+        firstSkipOffset = isStart ? 0 : contextSize,
+        lastSkipOffset = rowCount - (isEnd ? 0 : contextSize),
+        skipLength = lastSkipOffset - firstSkipOffset;
 
-      var miniAddCells = function(tidx, tend, idx) {
-        if (tidx < tend) {
-          newIdx = tidx + 1;
-        } else {
-          newIdx = tidx;
-        }
-        return newIdx;
-      };
+    if (skipLength == 0 || skipLength < minJumpSize) {
+      ranges.push(range);
+      continue;
+    }
 
-      // var data = this.buildRow_(beforeIdx, beforeEnd, afterIdx, afterEnd, change);
-      var newBeforeIdx = miniAddCells(beforeIdx, beforeEnd, beforeIdx + 1);
-      var newAfterIdx = miniAddCells(afterIdx, afterEnd, afterIdx + 1);
-      topRanges.push({
-        type: change,
-        before: [beforeIdx, newBeforeIdx],
-        after: [afterIdx, newAfterIdx]
+    // Convert the 'equal' block to an equal-skip-equal sequence.
+    if (firstSkipOffset > 0) {
+      ranges.push({
+        type: 'equal',
+        before: [beforeIdx, beforeIdx + firstSkipOffset],
+        after: [afterIdx, afterIdx + firstSkipOffset]
       });
-      beforeIdx = newBeforeIdx;
-      afterIdx = newAfterIdx;
     }
-    for (var i = 0; i < topRanges.length; i++) ranges.push(topRanges[i]);
-  }
-
-  if (ranges.length > 0) {
-    // Coalesce ranges of identical types.
-    var simplifiedRanges = [ranges[0]];
-    for (var i = 0; i < ranges.length; i++) {
-      var r = ranges[i];
-      var last = simplifiedRanges[simplifiedRanges.length - 1];
-      if (last.type == r.type) {
-        last.before[1] = r.before[1];
-        last.after[1] = r.after[1];
-      } else {
-        simplifiedRanges.push(r);
-      }
+    ranges.push({
+      type: 'skip',
+      before: [beforeIdx + firstSkipOffset, beforeIdx + lastSkipOffset],
+      after: [afterIdx + firstSkipOffset, afterIdx + lastSkipOffset]
+    });
+    if (lastSkipOffset < rowCount) {
+      ranges.push({
+        type: 'equal',
+        before: [beforeIdx + lastSkipOffset, beforeEnd],
+        after: [afterIdx + lastSkipOffset, afterEnd]
+      });
     }
-    ranges = simplifiedRanges;
   }
 
   return ranges;
