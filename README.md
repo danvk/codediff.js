@@ -57,6 +57,7 @@ $('#diffview').append(
         beforeName: 'oldfilename.py',
         afterName: 'newfilename.py',
         contextSize: 8,
+        minJumpSize: 5,
         wordWrap: true
     }));
 ```
