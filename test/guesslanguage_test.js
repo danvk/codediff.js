@@ -5,6 +5,7 @@ QUnit.test('guessLanguageUsingFileName', function(assert) {
   assert.equal(guess('foo.css'), 'css');
   assert.equal(guess('foo.py'), 'python');
   assert.equal(guess('foo.sh'), 'bash');
+  assert.equal(guess('foo.js'), 'javascript');
   assert.equal(guess('README.md'), 'markdown');
   assert.equal(guess('Makefile'), 'makefile');
   assert.equal(guess('foo.nonexistent'), null);
