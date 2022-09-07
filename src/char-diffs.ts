@@ -113,7 +113,7 @@ export function addCharacterDiffs(beforeCell: HTMLElement, afterCell: HTMLElemen
  * @return {Array.<string>} Component words in the line. An invariant is that
  *     splitIntoWords_(line).join('') == line.
  */
-function splitIntoWords(line: string): string[] {
+export function splitIntoWords(line: string): string[] {
   var LC = 0, UC = 2, NUM = 3, WS = 4, SYM = 5;
   var charType = function(c: string) {
     if (c.match(/[a-z]/)) return LC;
@@ -142,7 +142,7 @@ function splitIntoWords(line: string): string[] {
 
 // codes are (span class, start, end) triples.
 // This merges consecutive runs with the same class, which simplifies the HTML.
-function simplifyCodes(codes: CharacterDiff[]): CharacterDiff[] {
+export function simplifyCodes(codes: CharacterDiff[]): CharacterDiff[] {
   var newCodes = [];
   for (var i = 0; i < codes.length; i++) {
     var code = codes[i];
@@ -165,7 +165,7 @@ function simplifyCodes(codes: CharacterDiff[]): CharacterDiff[] {
 
 // codes are (span class, start, end) triples.
 // This wraps html[start..end] in appropriate <span>..</span>s.
-function codesToHtml(mapper: htmlTextMapper, codes: CharacterDiff[]) {
+export function codesToHtml(mapper: htmlTextMapper, codes: CharacterDiff[]) {
   var html = '';
   for (var i = 0; i < codes.length; i++) {
     var code = codes[i],

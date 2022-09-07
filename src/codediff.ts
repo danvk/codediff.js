@@ -1,6 +1,8 @@
+import { addCharacterDiffs, codesToHtml, computeCharacterDiffs, simplifyCodes, splitIntoWords } from './char-diffs';
 import { DiffRange, opcodesToDiffRanges } from './codes';
 import { addSoftBreaks, distributeSpans } from './dom-utils';
 import {htmlTextMapper} from './html-text-mapper';
+import { guessLanguageUsingContents, guessLanguageUsingFileName } from './language';
 import { buildRowTr, buildSkipTr } from './table-utils';
 
 interface DifferOptions {
@@ -203,5 +205,18 @@ function highlightText(text: string, opt_language?: string): string[] | null {
   return distributeSpans(html);
 }
 
-(window as any).codediff = differ;
-(window as any).htmlTextMapper = htmlTextMapper;
+(window as any).codediff = {
+  ...differ,
+  // These are exported for testing
+  distributeSpans_: distributeSpans,
+  simplifyCodes_: simplifyCodes,
+  codesToHtml_: codesToHtml,
+  addCharacterDiffs_: addCharacterDiffs,
+  computeCharacterDiffs_: computeCharacterDiffs,
+  splitIntoWords_: splitIntoWords,
+  guessLanguageUsingFileName,
+  guessLanguageUsingContents,
+  addSoftBreaks,
+  opcodesToDiffRanges,
+  htmlTextMapper,
+};
