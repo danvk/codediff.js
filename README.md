@@ -25,7 +25,7 @@ codediff.js is used by [webdiff](https://github.com/danvk/webdiff).
 <link rel="stylesheet" href="codediff.css">
 
 <!-- DOM -->
-<p>Here's the diff!</p>    
+<p>Here's the diff!</p>
 <div id="diffview"></div>
 
 <!-- Usage -->
@@ -70,4 +70,3 @@ To run the tests, run:
 
     npm install
     grunt test
-
