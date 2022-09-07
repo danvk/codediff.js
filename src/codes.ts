@@ -6,27 +6,22 @@ export interface DiffRange {
   after: [start: number, limit: number];
 }
 
-// Input is a list of opcodes, as output by difflib (e.g. 'equal', 'replace',
-// 'delete', 'insert').
-// Output is a list of diff ranges which corresponds precisely to the view, e.g.
-// 'skip', 'insert', 'replace', 'delete' and 'equal'.
-// Outputs are {type, before:[start,limit], after:[start,limit]} tuples.
-export function opcodesToDiffRanges(opcodes: difflib.OpCode[], contextSize: number, minJumpSize: number): DiffRange[] {
+/**
+ * Input is a list of opcodes, as output by difflib.
+ * Output is a list of diff ranges which corresponds precisely to the view, including skips.
+ */
+export function addSkips(opcodes: difflib.OpCode[], contextSize: number, minJumpSize: number): DiffRange[] {
   var ranges: DiffRange[] = [];
 
-  for (var i = 0; i < opcodes.length; i++) {
-    var opcode = opcodes[i];
-    const change = opcode[0];  // "equal", "replace", "delete", "insert"
-    var beforeIdx = opcode[1];
-    var beforeEnd = opcode[2];
-    var afterIdx = opcode[3];
-    var afterEnd = opcode[4];
+  for (let i = 0; i < opcodes.length; i++) {
+    const opcode = opcodes[i];
+    const [change, beforeIdx, beforeEnd, afterIdx, afterEnd] = opcode;
     var range: DiffRange = {
           type: change,
           before: [beforeIdx, beforeEnd],
           after: [afterIdx, afterEnd]
         };
-    if (change != 'equal') {
+    if (change !== 'equal') {
       ranges.push(range);
       continue;
     }
@@ -34,14 +29,14 @@ export function opcodesToDiffRanges(opcodes: difflib.OpCode[], contextSize: numb
     // Should this "equal" range have a jump inserted?
     // First remove `contextSize` lines from either end.
     // If this leaves more than minJumpSize rows, then splice in a jump.
-    var rowCount = beforeEnd - beforeIdx,  // would be same for after{End,Idx}
-        isStart = (i == 0),
-        isEnd = (i == opcodes.length - 1),
-        firstSkipOffset = isStart ? 0 : contextSize,
-        lastSkipOffset = rowCount - (isEnd ? 0 : contextSize),
-        skipLength = lastSkipOffset - firstSkipOffset;
+    const rowCount = beforeEnd - beforeIdx;  // would be same for after{End,Idx}
+    const isStart = (i == 0);
+    const isEnd = (i == opcodes.length - 1);
+    const firstSkipOffset = isStart ? 0 : contextSize;
+    const lastSkipOffset = rowCount - (isEnd ? 0 : contextSize);
+    const skipLength = lastSkipOffset - firstSkipOffset;
 
-    if (skipLength == 0 || skipLength < minJumpSize) {
+    if (skipLength === 0 || skipLength < minJumpSize) {
       ranges.push(range);
       continue;
     }

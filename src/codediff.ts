@@ -1,5 +1,5 @@
 import { addCharacterDiffs, codesToHtml, computeCharacterDiffs, simplifyCodes, splitIntoWords } from './char-diffs';
-import { DiffRange, opcodesToDiffRanges } from './codes';
+import { DiffRange, addSkips } from './codes';
 import { addSoftBreaks, distributeSpans } from './dom-utils';
 import {htmlTextMapper} from './html-text-mapper';
 import { guessLanguageUsingContents, guessLanguageUsingFileName } from './language';
@@ -39,8 +39,10 @@ export class differ {
     var opcodes = sm.get_opcodes();
 
     // TODO: don't store the diff ranges -- they're only used once in buildView.
-    this.diffRanges = opcodesToDiffRanges(
-        opcodes, this.params.contextSize, this.params.minJumpSize);
+    this.diffRanges = addSkips(opcodes, this.params.contextSize, this.params.minJumpSize);
+
+    // XXX this would be the right entrypoint for `git diff`
+    //     produce the equivalent of diffRanges
 
     if (this.params.language) {
       var lang = this.params.language;
@@ -68,7 +70,6 @@ export class differ {
       var beforeIdx = skipData.beforeStartIndex;
       var afterIdx = skipData.afterStartIndex;
       var jump = skipData.jumpLength;
-      var change = "equal";
       var newTrs = [];
       for (var i = 0; i < jump; i++) {
         newTrs.push(buildRowTr(
@@ -96,8 +97,7 @@ export class differ {
       el.removeClass('selecting-left selecting-right')
         .addClass('selecting-' + (isLeft ? 'left' : 'right'));
     }).on('copy', function(e) {
-      var isLeft = el.is('.selecting-left'),
-          idx = isLeft ? 1 : 2;  // index of <td> within <tr>
+      var isLeft = el.is('.selecting-left');
 
       var sel = window.getSelection()!,
           range = sel.getRangeAt(0),
@@ -119,7 +119,6 @@ export class differ {
       e.preventDefault();
     });
   }
-
 
   buildView_() {
     // TODO: is this distinction necessary?
@@ -217,6 +216,6 @@ function highlightText(text: string, opt_language?: string): string[] | null {
   guessLanguageUsingFileName,
   guessLanguageUsingContents,
   addSoftBreaks,
-  opcodesToDiffRanges,
+  opcodesToDiffRanges: addSkips,
   htmlTextMapper,
 };
