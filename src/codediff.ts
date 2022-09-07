@@ -1,4 +1,5 @@
-import { distributeSpans } from './dom-utils';
+import { DiffRange, opcodesToDiffRanges } from './codes';
+import { addSoftBreaks, distributeSpans } from './dom-utils';
 import {htmlTextMapper} from './html-text-mapper';
 import { buildRowTr, buildSkipTr } from './table-utils';
 
@@ -9,14 +10,6 @@ interface DifferOptions {
   beforeName: string;
   afterName: string;
   wordWrap?: boolean;
-}
-
-type OpType = difflib.OpCode[0];
-
-interface DiffRange {
-  type: OpType | 'skip';
-  before: [start: number, limit: number];
-  after: [start: number, limit: number];
 }
 
 export class differ {
@@ -44,7 +37,7 @@ export class differ {
     var opcodes = sm.get_opcodes();
 
     // TODO: don't store the diff ranges -- they're only used once in buildView.
-    this.diffRanges = differ.opcodesToDiffRanges(
+    this.diffRanges = opcodesToDiffRanges(
         opcodes, this.params.contextSize, this.params.minJumpSize);
 
     if (this.params.language) {
@@ -193,7 +186,7 @@ export class differ {
     // TODO: move into buildRowTr_?
     if (!this.params.wordWrap) {
       $table.find('.code').each(function(_, el) {
-        differ.addSoftBreaks(el);
+        addSoftBreaks(el);
       });
     }
 
@@ -204,165 +197,11 @@ export class differ {
     return $container.get(0);
   };
 
-  // Input is a list of opcodes, as output by difflib (e.g. 'equal', 'replace',
-  // 'delete', 'insert').
-  // Output is a list of diff ranges which corresponds precisely to the view, e.g.
-  // 'skip', 'insert', 'replace', 'delete' and 'equal'.
-  // Outputs are {type, before:[start,limit], after:[start,limit]} tuples.
-  static opcodesToDiffRanges(opcodes: difflib.OpCode[], contextSize: number, minJumpSize: number): DiffRange[] {
-    var ranges: DiffRange[] = [];
-
-    for (var i = 0; i < opcodes.length; i++) {
-      var opcode = opcodes[i];
-      const change = opcode[0];  // "equal", "replace", "delete", "insert"
-      var beforeIdx = opcode[1];
-      var beforeEnd = opcode[2];
-      var afterIdx = opcode[3];
-      var afterEnd = opcode[4];
-      var range: DiffRange = {
-            type: change,
-            before: [beforeIdx, beforeEnd],
-            after: [afterIdx, afterEnd]
-          };
-      if (change != 'equal') {
-        ranges.push(range);
-        continue;
-      }
-
-      // Should this "equal" range have a jump inserted?
-      // First remove `contextSize` lines from either end.
-      // If this leaves more than minJumpSize rows, then splice in a jump.
-      var rowCount = beforeEnd - beforeIdx,  // would be same for after{End,Idx}
-          isStart = (i == 0),
-          isEnd = (i == opcodes.length - 1),
-          firstSkipOffset = isStart ? 0 : contextSize,
-          lastSkipOffset = rowCount - (isEnd ? 0 : contextSize),
-          skipLength = lastSkipOffset - firstSkipOffset;
-
-      if (skipLength == 0 || skipLength < minJumpSize) {
-        ranges.push(range);
-        continue;
-      }
-
-      // Convert the 'equal' block to an equal-skip-equal sequence.
-      if (firstSkipOffset > 0) {
-        ranges.push({
-          type: 'equal',
-          before: [beforeIdx, beforeIdx + firstSkipOffset],
-          after: [afterIdx, afterIdx + firstSkipOffset]
-        });
-      }
-      ranges.push({
-        type: 'skip',
-        before: [beforeIdx + firstSkipOffset, beforeIdx + lastSkipOffset],
-        after: [afterIdx + firstSkipOffset, afterIdx + lastSkipOffset]
-      });
-      if (lastSkipOffset < rowCount) {
-        ranges.push({
-          type: 'equal',
-          before: [beforeIdx + lastSkipOffset, beforeEnd],
-          after: [afterIdx + lastSkipOffset, afterEnd]
-        });
-      }
-    }
-
-    return ranges;
-  }
-
-  /**
-   * Adds soft wrap markers between all characters in a DOM element.
-   */
-  static addSoftBreaks(el: HTMLElement) {
-    var softBreak = '\u200B';
-    walkTheDOM(el, function(node) {
-      if (node.nodeType !== 3) return;
-      var text = (node as Text).data;
-      text = text.split('').join(softBreak);
-      node.nodeValue = text;
-    });
-  }
-
   static buildView(beforeText: string, afterText: string, userParams: DifferOptions) {
     var d = new differ(beforeText, afterText, userParams);
     return d.buildView_();
   }
-
-  /**
-   * Returns a valid HighlightJS language based on a file name/path.
-   * If it can't guess a language, returns null.
-   */
-  static guessLanguageUsingFileName(name: string) {
-    var lang = (function() {
-      var m = /\.([^.]+)$/.exec(name);
-      if (m) {
-        var ext = m[1];
-        if (ext == 'py') return 'python';
-        if (ext == 'sh') return 'bash';
-        if (ext == 'md') return 'markdown';
-        if (ext == 'js') return 'javascript';
-        return m[1].toLowerCase();
-      };
-
-      // Highlighting based purely on file name, e.g. "Makefile".
-      m = /(?:.*\/)?([^\/]*)$/.exec(name);
-      if (m && m[1] == 'Makefile') {
-        return 'makefile';
-      }
-      return null;
-    })();
-    if (!lang || !hljs.getLanguage(lang)) {
-      return null;
-    } else {
-      return lang;
-    }
-  };
-
-  /**
-   * Guess a language based on a file's contents.
-   * This always returns a valid HighlightJS language. It considers the shebang
-   * line (if present) and then falls back to HighlightJS's keyword-based
-   * guessing.
-   */
-  static guessLanguageUsingContents(contents: string) {
-    // First check for a shebang line.
-    var firstLine = contents.substring(0, contents.indexOf('\n'));
-    if (firstLine.substring(0, 2) == '#!') {
-      var processor = firstLine.substring(2);
-      if (processor == '/bin/bash') return 'bash';
-      if (processor == '/bin/sh') return 'bash';
-
-      const options = {
-          'python': 'python',
-          'perl': 'perl',
-          'ruby': 'ruby',
-          'node': 'javascript'
-      };
-      let interpreter: keyof typeof options;
-      for (interpreter in options) {
-        var lang = options[interpreter];
-        if (processor.indexOf(interpreter) >= 0) {
-          return lang;
-        }
-      }
-    }
-
-    // Now let HighlightJS guess.
-    var guess = hljs.highlightAuto(contents);
-    var lang = guess.language;
-    return lang;
-  };
 }
 
-function walkTheDOM(node: Node, func: (n: Node) => void) {
-  func(node);
-  let n = node.firstChild;
-  while (n) {
-    walkTheDOM(n, func);
-    n = n.nextSibling;
-  }
-}
-
-export const codediff = differ;
-
-(window as any).codediff = codediff;
+(window as any).codediff = differ;
 (window as any).htmlTextMapper = htmlTextMapper;
