@@ -43,11 +43,12 @@ export class differ {
 
     // XXX this would be the right entrypoint for `git diff`
     //     produce the equivalent of diffRanges
+    //     git diff output already includes "skips"
 
-    if (this.params.language) {
-      var lang = this.params.language;
-      this.beforeLinesHighlighted = highlightText(beforeText, lang);
-      this.afterLinesHighlighted = highlightText(afterText, lang);
+    const {language} = this.params;
+    if (language) {
+      this.beforeLinesHighlighted = highlightText(beforeText, language);
+      this.afterLinesHighlighted = highlightText(afterText, language);
     }
     // TODO: from this point on language shouldn't need to be used.
   };
@@ -178,26 +179,14 @@ export class differ {
 }
 
 /**
- * @param {string} text The lines to highlight.
- * @param {?string} opt_language Language to pass to highlight.js. If not
- *     specified, then the language will be auto-detected.
- * @return {Array.<string>} Lines marked up with syntax <span>s. The <span>
+ * @return Lines marked up with syntax <span>s. The <span>
  *     tags will be balanced within each line.
  */
-function highlightText(text: string, opt_language?: string): string[] | null {
+function highlightText(text: string, language: string): string[] | null {
   if (text === null) return [];
 
   // TODO(danvk): look into suppressing highlighting if .relevance is low.
-  var html;
-  if (opt_language) {
-    html = hljs.highlight(opt_language, text, true).value;
-  } else {
-    return null;
-    // This produces a lot of false positives:
-    // html = hljs.highlightAuto(text).value;
-    // There is a relevance number but it's hard to threshold. The file
-    // extension is probably a good enough heuristic.
-  }
+  const html = hljs.highlight(language, text, true).value;
 
   // Some of the <span>s might cross lines, which won't work for our diff
   // structure. We convert them to single-line only <spans> here.
