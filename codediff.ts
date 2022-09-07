@@ -723,3 +723,5 @@ function html_substr(html: string, start: number, count: number) {
 
   return div.innerHTML;
 }
+
+const codediff = differ;
