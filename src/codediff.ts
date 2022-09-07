@@ -1,4 +1,6 @@
+import { distributeSpans } from './dom-utils';
 import {htmlTextMapper} from './html-text-mapper';
+import { buildRowTr, buildSkipTr } from './table-utils';
 
 interface DifferOptions {
   contextSize: number;
@@ -16,8 +18,6 @@ interface DiffRange {
   before: [start: number, limit: number];
   after: [start: number, limit: number];
 }
-
-type CharacterDiff = [OpType | 'skip' | null, number, number];
 
 export class differ {
   params: DifferOptions;
@@ -60,47 +60,6 @@ export class differ {
   };
 
   /**
-   * @param text Possibly multiline text containing spans that cross
-   *     line breaks.
-   * @return An array of individual lines, each of which has
-   *     entirely balanced <span> tags.
-   */
-  static distributeSpans_(text: string): string[] {
-    const lines = difflib.stringAsLines(text);
-    const spanRe = /(<span[^>]*>)|(<\/span>)/;
-
-    const outLines = [];
-    const liveSpans = [];
-    for (const line of lines) {
-      const groups = line.split(spanRe);
-      let i = 0;
-      let outLine = liveSpans.join('');
-      while (i < groups.length) {
-        const g = groups[i];
-        if (g === undefined) {
-          // close span
-          outLine += groups[i + 1];
-          liveSpans.pop();
-          i += 2;
-        } else if (g.substr(0, 5) == '<span') {
-          // open span
-          i += 2;
-          outLine += g;
-          liveSpans.push(g);
-        } else {
-          // plain text
-          outLine += g;
-          i++;
-        }
-      }
-      liveSpans.forEach(function() { outLine += '</span>'; });
-      outLines.push(outLine);
-    }
-    if (liveSpans.length) throw "Unbalanced <span>s in " + text;
-    return outLines;
-  };
-
-  /**
    * @param {string} text The lines to highlight.
    * @param {?string} opt_language Language to pass to highlight.js. If not
    *     specified, then the language will be auto-detected.
@@ -124,7 +83,7 @@ export class differ {
 
     // Some of the <span>s might cross lines, which won't work for our diff
     // structure. We convert them to single-line only <spans> here.
-    return differ.distributeSpans_(html);
+    return distributeSpans(html);
   }
 
   /**
@@ -144,7 +103,7 @@ export class differ {
       var change = "equal";
       var newTrs = [];
       for (var i = 0; i < jump; i++) {
-        newTrs.push(differ.buildRowTr_(
+        newTrs.push(buildRowTr(
           'equal',
           beforeIdx + i + 1,
           beforeLines[beforeIdx + i],
@@ -193,64 +152,6 @@ export class differ {
     });
   }
 
-  /**
-   * Create a single row in the table. Adds character diffs if required.
-   */
-  static buildRowTr_(
-    type: 'replace' | 'delete' | 'insert' | 'equal',
-    beforeLineNum: number | null,
-    beforeTextOrHtml: string | null | undefined,
-    afterLineNum: number | null,
-    afterTextOrHtml: string | null | undefined,
-    language: string | null
-  ): HTMLElement {
-    var $makeCodeTd = function(textOrHtml: string | null | undefined) {
-      if (textOrHtml == null) {
-        return $('<td class="empty code">');
-      }
-      textOrHtml = textOrHtml.replace(/\t/g, "\u00a0\u00a0\u00a0\u00a0");
-      var $td = $('<td class="code">').addClass(type);
-      if (language) {
-        $td.html(textOrHtml);
-      } else {
-        $td.text(textOrHtml);
-      }
-      return $td;
-    };
-
-    var cells = [
-      $('<td class=line-no>').text(beforeLineNum || '').get(0)!,
-      $makeCodeTd(beforeTextOrHtml).addClass('before').get(0)!,
-      $makeCodeTd(afterTextOrHtml).addClass('after').get(0)!,
-      $('<td class=line-no>').text(afterLineNum || '').get(0)!
-    ];
-    if (type == 'replace') {
-      differ.addCharacterDiffs_(cells[1], cells[2]);
-    }
-
-    return $('<tr>').append(cells).get(0)!;
-  }
-
-  /**
-   * Create a "skip" row with a link to expand.
-   * beforeIdx and afterIdx are the indices of the first lines skipped.
-   */
-  static buildSkipTr_(beforeIdx: number, afterIdx: number, numRowsSkipped: number): HTMLElement {
-    var $tr = $(
-      '<tr>' +
-        '<td class="line-no">&hellip;</td>' +
-        '<td colspan="2" class="skip code">' +
-          '<a href="#">Show ' + numRowsSkipped + ' more lines</a>' +
-        '</td>' +
-        '<td class="line-no">&hellip;</td>' +
-      '</tr>');
-    $tr.find('.skip').data({
-      'beforeStartIndex': beforeIdx,
-      'afterStartIndex': afterIdx,
-      'jumpLength': numRowsSkipped
-    });
-    return $tr.get(0)!;
-  };
 
   buildView_() {
     // TODO: is this distinction necessary?
@@ -272,13 +173,13 @@ export class differ {
 
       if (type == 'skip') {
         $table.append(
-          differ.buildSkipTr_(range.before[0], range.after[0], numRows)
+          buildSkipTr(range.before[0], range.after[0], numRows)
         );
       } else {
         for (var j = 0; j < numRows; j++) {
           var beforeIdx = (j < numBeforeRows) ? range.before[0] + j : null,
               afterIdx = (j < numAfterRows) ? range.after[0] + j : null;
-          $table.append(differ.buildRowTr_(
+          $table.append(buildRowTr(
               type,
               (beforeIdx != null) ? 1 + beforeIdx : null,
               beforeIdx != null ? beforeLines[beforeIdx] : undefined,
@@ -380,186 +281,6 @@ export class differ {
       node.nodeValue = text;
     });
   }
-
-  /**
-   * @param {string} line The line to be split
-   * @return {Array.<string>} Component words in the line. An invariant is that
-   *     splitIntoWords_(line).join('') == line.
-   */
-  static splitIntoWords_(line: string): Array<string> {
-    var LC = 0, UC = 2, NUM = 3, WS = 4, SYM = 5;
-    var charType = function(c: string) {
-      if (c.match(/[a-z]/)) return LC;
-      if (c.match(/[A-Z]/)) return UC;
-      if (c.match(/[0-9]/)) return NUM;
-      if (c.match(/\s/)) return WS;
-      return SYM;
-    };
-
-    // Single words can be [A-Z][a-z]+, [A-Z]+, [a-z]+, [0-9]+ or \s+.
-    var words = [];
-    var lastType = -1;
-    for (var i = 0; i < line.length; i++) {
-      var c = line.charAt(i);
-      var ct = charType(c);
-      if (ct == lastType && ct != SYM && ct != WS ||
-          ct == LC && lastType == UC && words[words.length - 1].length == 1) {
-        words[words.length - 1] += c;
-      } else {
-        words.push(c);
-      }
-      lastType = ct;
-    }
-    return words;
-  }
-
-  /**
-   * Compute an intra-line diff.
-   * @param {string} beforeText
-   * @param {string} afterText
-   * @return {?Array.<Array>} [before codes, after codes], where each element is a
-   *     list of ('change type', start idx, stop idx) triples. Returns null if
-   *     character differences are not appropriate for this line pairing.
-   */
-  static computeCharacterDiffs_(beforeText: string, afterText: string): [
-    CharacterDiff[],
-    CharacterDiff[],
-  ] | null {
-    var beforeWords = differ.splitIntoWords_(beforeText),
-        afterWords = differ.splitIntoWords_(afterText);
-
-    // TODO: precompute two arrays; this does too much work.
-    var wordToIdx = function(isBefore: boolean, idx: number) {
-      var words = isBefore ? beforeWords : afterWords;
-      var charIdx = 0;
-      for (var i = 0; i < idx; i++) {
-        charIdx += words[i].length;
-      }
-      return charIdx;
-    };
-
-    var sm = new difflib.SequenceMatcher(beforeWords, afterWords);
-    var opcodes = sm.get_opcodes();
-
-    // Suppress char-by-char diffs if there's less than 50% character overlap.
-    // The one exception is pure whitespace diffs, which should always be shown.
-    var minEqualFrac = 0.5;
-    var equalCount = 0, charCount = 0;
-    var beforeDiff = '', afterDiff = '';
-    opcodes.forEach(function(opcode) {
-      var change = opcode[0];
-      var beforeIdx = wordToIdx(true, opcode[1]);
-      var beforeEnd = wordToIdx(true, opcode[2]);
-      var afterIdx = wordToIdx(false, opcode[3]);
-      var afterEnd = wordToIdx(false, opcode[4]);
-      var beforeLen = beforeEnd - beforeIdx;
-      var afterLen = afterEnd - afterIdx;
-      var count = beforeLen + afterLen;
-      if (change == 'equal') {
-        equalCount += count;
-      } else {
-        beforeDiff += beforeText.substring(beforeIdx, beforeEnd);
-        afterDiff += afterText.substring(afterIdx, afterEnd);
-      }
-      charCount += count;
-    });
-    if (equalCount < minEqualFrac * charCount &&
-        !(beforeDiff.match(/^\s*$/) && afterDiff.match(/^\s*$/))) {
-      return null;
-    }
-
-    var beforeOut: CharacterDiff[] = [],
-        afterOut: CharacterDiff[] = [];  // (span class, start, end) triples
-    opcodes.forEach(function(opcode) {
-      var change = opcode[0];
-      var beforeIdx = wordToIdx(true, opcode[1]);
-      var beforeEnd = wordToIdx(true, opcode[2]);
-      var afterIdx = wordToIdx(false, opcode[3]);
-      var afterEnd = wordToIdx(false, opcode[4]);
-      if (change == 'equal') {
-        beforeOut.push([null, beforeIdx, beforeEnd]);
-        afterOut.push([null, afterIdx, afterEnd]);
-      } else if (change == 'delete') {
-        beforeOut.push(['delete', beforeIdx, beforeEnd]);
-      } else if (change == 'insert') {
-        afterOut.push(['insert', afterIdx, afterEnd]);
-      } else if (change == 'replace') {
-        beforeOut.push(['delete', beforeIdx, beforeEnd]);
-        afterOut.push(['insert', afterIdx, afterEnd]);
-      } else {
-        throw "Invalid opcode: " + opcode[0];
-      }
-    });
-    beforeOut = differ.simplifyCodes_(beforeOut);
-    afterOut = differ.simplifyCodes_(afterOut);
-
-    return [beforeOut, afterOut];
-  }
-
-  // Add character-by-character diffs to a row (if appropriate).
-  static addCharacterDiffs_(beforeCell: HTMLElement, afterCell: HTMLElement) {
-    var beforeText = $(beforeCell).text(),
-        afterText = $(afterCell).text();
-    var codes = differ.computeCharacterDiffs_(beforeText, afterText);
-    if (codes == null) return;
-    const beforeOut = codes[0];
-    const afterOut = codes[1];
-
-    // Splice in "insert", "delete" and "replace" tags.
-    // This is made more difficult by the presence of syntax highlighting, which
-    // has its own set of tags. The two can co-exists if we're careful to only
-    // wrap complete (balanced) DOM trees.
-    var beforeHtml = $(beforeCell).html(),
-        afterHtml = $(afterCell).html();
-    var beforeMapper = new htmlTextMapper(beforeText, beforeHtml);
-    var afterMapper = new htmlTextMapper(afterText, afterHtml);
-
-    $(beforeCell).empty().html(differ.codesToHtml_(beforeMapper, beforeOut));
-    $(afterCell).empty().html(differ.codesToHtml_(afterMapper, afterOut));
-  }
-
-  // codes are (span class, start, end) triples.
-  // This merges consecutive runs with the same class, which simplifies the HTML.
-  static simplifyCodes_(codes: CharacterDiff[]): CharacterDiff[] {
-    var newCodes = [];
-    for (var i = 0; i < codes.length; i++) {
-      var code = codes[i];
-      if (i == 0) {
-        newCodes.push(code);
-        continue;
-      }
-
-      var lastIndex = newCodes.length - 1;
-      var lastCodeClass = newCodes[lastIndex][0];
-      if (lastCodeClass == code[0]) {
-        newCodes[lastIndex][2] = code[2];  // extend last run.
-      } else {
-        newCodes.push(code);
-      }
-    }
-
-    return newCodes;
-  }
-
-  // codes are (span class, start, end) triples.
-  // This wraps html[start..end] in appropriate <span>..</span>s.
-  static codesToHtml_(mapper: htmlTextMapper, codes: [string | null, number, number][]) {
-    var html = '';
-    for (var i = 0; i < codes.length; i++) {
-      var code = codes[i],
-          type = code[0],
-          start = code[1],
-          limit = code[2];
-      var thisHtml = mapper.getHtmlSubstring(start, limit);
-      if (type == null) {
-        html += thisHtml;
-      } else {
-        html += '<span class="char-' + type + '">' + thisHtml + '</span>';
-      }
-    }
-    return html;
-  }
-
 
   static buildView(beforeText: string, afterText: string, userParams: DifferOptions) {
     var d = new differ(beforeText, afterText, userParams);
