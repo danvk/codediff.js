@@ -4,14 +4,14 @@ export class htmlTextMapper {
   constructor(text: string, html: string) {
     this.text_ = text;
     this.html_ = html;
-  };
+  }
 
   // Get the substring of HTML corresponding to text.substr(start, len).
   // Leading markup is included with index 0, trailing with the last char.
   getHtmlSubstring(start: number, limit: number) {
     var count = limit - start;
     return html_substr(this.html_, start, count);
-  };
+  }
 }
 
 // Returns the HTML corresponding to text in positions [start, start+count).
@@ -48,21 +48,22 @@ function html_substr(html: string, start: number, count: number) {
   }
 
   function walk(el: Node, fn: (node: Text) => void) {
-    var node = el.firstChild, oldNode;
+    var node = el.firstChild,
+      oldNode;
     var elsToRemove = [];
     do {
       if (node?.nodeType === 3) {
         fn(node as Text);
       } else if (node?.nodeType === 1 && node.childNodes && node.childNodes[0]) {
-        walk( node, fn );
+        walk(node, fn);
       }
       if (consumed == 0 && node?.nodeType == 1) {
         elsToRemove.push(node);
       }
-    } while ((node = node?.nextSibling ?? null) && (count > 0));
+    } while ((node = node?.nextSibling ?? null) && count > 0);
 
     // remove remaining nodes
-    while (node){
+    while (node) {
       oldNode = node;
       node = node.nextSibling;
       el.removeChild(oldNode);

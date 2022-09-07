@@ -3,7 +3,7 @@
  * If it can't guess a language, returns null.
  */
 export function guessLanguageUsingFileName(name: string) {
-  var lang = (function() {
+  var lang = (function () {
     var m = /\.([^.]+)$/.exec(name);
     if (m) {
       var ext = m[1];
@@ -12,7 +12,7 @@ export function guessLanguageUsingFileName(name: string) {
       if (ext == 'md') return 'markdown';
       if (ext == 'js') return 'javascript';
       return m[1].toLowerCase();
-    };
+    }
 
     // Highlighting based purely on file name, e.g. "Makefile".
     m = /(?:.*\/)?([^\/]*)$/.exec(name);
@@ -27,7 +27,7 @@ export function guessLanguageUsingFileName(name: string) {
   } else {
     return lang;
   }
-};
+}
 
 /**
  * Guess a language based on a file's contents.
@@ -44,10 +44,10 @@ export function guessLanguageUsingContents(contents: string) {
     if (processor == '/bin/sh') return 'bash';
 
     const options = {
-        'python': 'python',
-        'perl': 'perl',
-        'ruby': 'ruby',
-        'node': 'javascript'
+      python: 'python',
+      perl: 'perl',
+      ruby: 'ruby',
+      node: 'javascript',
     };
     let interpreter: keyof typeof options;
     for (interpreter in options) {
@@ -62,4 +62,4 @@ export function guessLanguageUsingContents(contents: string) {
   var guess = hljs.highlightAuto(contents);
   var lang = guess.language;
   return lang;
-};
+}

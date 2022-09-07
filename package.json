@@ -29,6 +29,7 @@
     "grunt-qunit-junit": "~0.1.0",
     "parcel": "^2.7.0",
     "phantomjs": "~1.9.7",
+    "prettier": "^2.7.1",
     "qunitjs": "^1.14.0",
     "typescript": "^4.8.2"
   },

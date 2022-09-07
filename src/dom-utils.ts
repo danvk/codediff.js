@@ -32,19 +32,21 @@ export function distributeSpans(text: string): string[] {
         i++;
       }
     }
-    liveSpans.forEach(function() { outLine += '</span>'; });
+    liveSpans.forEach(function () {
+      outLine += '</span>';
+    });
     outLines.push(outLine);
   }
-  if (liveSpans.length) throw "Unbalanced <span>s in " + text;
+  if (liveSpans.length) throw 'Unbalanced <span>s in ' + text;
   return outLines;
-};
+}
 
 /**
  * Adds soft wrap markers between all characters in a DOM element.
  */
 export function addSoftBreaks(el: HTMLElement) {
   var softBreak = '\u200B';
-  walkTheDOM(el, function(node) {
+  walkTheDOM(el, function (node) {
     if (node.nodeType !== 3) return;
     var text = (node as Text).data;
     text = text.split('').join(softBreak);
