@@ -43,5 +43,9 @@ I can see the appeal of browser-based testing if your app is heavily dependent o
 
 Next steps…
 
-- [ ] Split codediff.ts into multiple modules
-- [ ] Set up a bundler or get ESM working
+- [x] Split codediff.ts into multiple modules
+- [x] Set up a bundler or get ESM working
+
+This diff would be an interesting one to try out `git diff` options on:
+<https://github.com/danvk/codediff.js/pull/21/files>
+It's mostly a split-up of codediff.js into a bunch of other files.
