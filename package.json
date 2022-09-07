@@ -6,6 +6,14 @@
     "type": "git",
     "url": "https://github.com/danvk/codediff.js.git"
   },
+  "targets": {
+    "default": {
+      "context": "browser",
+      "outputFormat": "global",
+      "source": "src/codediff.ts",
+      "isLibrary": true
+    }
+  },
   "dependencies": {
     "highlight.js": "~8.0.0",
     "jquery": ">=2.0.0"
@@ -19,11 +27,13 @@
     "grunt-contrib-qunit": "~0.5.1",
     "grunt-qunit-cov": "~0.3.6",
     "grunt-qunit-junit": "~0.1.0",
+    "parcel": "^2.7.0",
     "phantomjs": "~1.9.7",
     "qunitjs": "^1.14.0",
     "typescript": "^4.8.2"
   },
   "scripts": {
-    "test": "grunt travis"
+    "watch": "parcel watch",
+    "build": "parcel build"
   }
 }

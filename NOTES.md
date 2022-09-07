@@ -38,3 +38,10 @@ class differ.htmlTextMapper {
 
 To run the tests, you open test/index.html in your browser.
 This is really a transitional project between dygraphs and knowing what I was doing!
+
+I can see the appeal of browser-based testing if your app is heavily dependent on jQuery.
+
+Next steps…
+
+- [ ] Split codediff.ts into multiple modules
+- [ ] Set up a bundler or get ESM working
