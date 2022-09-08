@@ -20,6 +20,13 @@ td.code {
   word-wrap: break-word;
 }
 
+table.diff td.code {
+  word-break: break-all;
+}
+table.diff.word-wrap td.code {
+  word-break: normal;
+}
+
 table.diff td {
   vertical-align: top;
 }

@@ -6,7 +6,7 @@ import {
   splitIntoWords,
 } from './char-diffs';
 import {DiffRange, addSkips} from './codes';
-import {addSoftBreaks, distributeSpans} from './dom-utils';
+import {distributeSpans} from './dom-utils';
 import {htmlTextMapper} from './html-text-mapper';
 import {guessLanguageUsingContents, guessLanguageUsingFileName} from './language';
 import {buildRowTr, buildSkipTr} from './table-utils';
@@ -125,7 +125,6 @@ export class differ {
             text += (i ? '\n' : '') + td.textContent;
           });
         }
-        text = text.replace(/\u200B/g, ''); // remove soft breaks
 
         var clipboardData = (e.originalEvent as ClipboardEvent).clipboardData;
         clipboardData?.setData('text', text);
@@ -174,11 +173,8 @@ export class differ {
       }
     }
 
-    // TODO: move into buildRowTr_?
-    if (!this.params.wordWrap) {
-      $table.find('.code').each(function (_, el) {
-        addSoftBreaks(el);
-      });
+    if (this.params.wordWrap) {
+      $table.addClass('word-wrap');
     }
 
     var $container = $('<div class="diff">');
@@ -220,7 +216,6 @@ function highlightText(text: string, language: string): string[] | null {
   splitIntoWords_: splitIntoWords,
   guessLanguageUsingFileName,
   guessLanguageUsingContents,
-  addSoftBreaks,
   opcodesToDiffRanges: addSkips,
   htmlTextMapper,
   buildView: differ.buildView,

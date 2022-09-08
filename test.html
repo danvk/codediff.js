@@ -1,6 +1,7 @@
 <!doctype html>
 <html>
 <head>
+  <meta charset="utf-8">
   <!-- A web font both looks nice and ensures consistent pixels across platforms.
        It's not necessary for codediff.js to function, however. Any font will do. -->
   <link href='http://fonts.googleapis.com/css?family=Inconsolata' rel='stylesheet' type='text/css'>
@@ -23,7 +24,15 @@
 <script src="dist/codediff.js"></script>
 <script type="text/javascript">
 function renderDiff(diffDiv, contentsBefore, contentsAfter) {
-  diffDiv.appendChild(codediff.buildView(contentsBefore, contentsAfter, {}));
+  diffDiv.appendChild(
+    codediff.buildView(
+      contentsBefore,
+      contentsAfter,
+      {
+        wordWrap: true,
+      }
+    )
+  );
 }
 </script>
 <script type="notjavascript" id="before">Hello
