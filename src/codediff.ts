@@ -223,4 +223,5 @@ function highlightText(text: string, language: string): string[] | null {
   addSoftBreaks,
   opcodesToDiffRanges: addSkips,
   htmlTextMapper,
+  buildView: differ.buildView,
 };
