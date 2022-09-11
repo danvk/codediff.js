@@ -11,50 +11,53 @@ import {htmlTextMapper} from './html-text-mapper';
 import {guessLanguageUsingContents, guessLanguageUsingFileName} from './language';
 import {buildRowTr, buildSkipTr} from './table-utils';
 
-interface DifferOptions {
-  contextSize: number;
+export interface PatchOptions {
   minJumpSize: number;
   language: string | null;
   beforeName: string;
   afterName: string;
-  wordWrap?: boolean;
+  wordWrap: boolean;
+}
+
+export interface DiffOptions {
+  contextSize: number;
+  minJumpSize: number;
 }
 
 export class differ {
-  params: DifferOptions;
+  params: PatchOptions;
   beforeLines: string[];
   afterLines: string[];
   diffRanges: DiffRange[];
   beforeLinesHighlighted: string[] | null | undefined;
   afterLinesHighlighted: string[] | null | undefined;
 
-  constructor(beforeText: string, afterText: string, userParams: DifferOptions) {
-    const defaultParams = {
-      contextSize: 3,
+  constructor(
+    beforeText: string | null,
+    beforeLines: string[],
+    afterText: string | null,
+    afterLines: string[],
+    ops: DiffRange[],
+    params: Partial<PatchOptions>
+  ) {
+    const defaultParams: PatchOptions = {
       minJumpSize: 10,
       language: null,
       beforeName: 'Before',
       afterName: 'After',
+      wordWrap: false,
     };
 
-    this.params = {...defaultParams, ...userParams};
+    this.params = {...defaultParams, ...params};
 
-    this.beforeLines = beforeText ? difflib.stringAsLines(beforeText) : [];
-    this.afterLines = afterText ? difflib.stringAsLines(afterText) : [];
-    var sm = new difflib.SequenceMatcher(this.beforeLines, this.afterLines);
-    var opcodes = sm.get_opcodes();
-
-    // TODO: don't store the diff ranges -- they're only used once in buildView.
-    this.diffRanges = addSkips(opcodes, this.params.contextSize, this.params.minJumpSize);
-
-    // XXX this would be the right entrypoint for `git diff`
-    //     produce the equivalent of diffRanges
-    //     git diff output already includes "skips"
+    this.beforeLines = beforeLines;
+    this.afterLines = afterLines;
+    this.diffRanges = ops;
 
     const {language} = this.params;
     if (language) {
-      this.beforeLinesHighlighted = highlightText(beforeText, language);
-      this.afterLinesHighlighted = highlightText(afterText, language);
+      this.beforeLinesHighlighted = highlightText(beforeText ?? '', language);
+      this.afterLinesHighlighted = highlightText(afterText ?? '', language);
     }
     // TODO: from this point on language shouldn't need to be used.
   }
@@ -184,8 +187,21 @@ export class differ {
     return $container.get(0);
   }
 
-  static buildView(beforeText: string, afterText: string, userParams: DifferOptions) {
-    var d = new differ(beforeText, afterText, userParams);
+  static buildView(beforeText: string | null, afterText: string | null, userParams: Partial<DiffOptions & PatchOptions>) {
+    const params: DiffOptions = {contextSize: 3, minJumpSize: 10, wordWrap: false, ...userParams};
+    const beforeLines = beforeText ? difflib.stringAsLines(beforeText) : [];
+    const afterLines = afterText ? difflib.stringAsLines(afterText) : [];
+    const sm = new difflib.SequenceMatcher(beforeLines, afterLines);
+    const opcodes = sm.get_opcodes();
+    const diffRanges = addSkips(opcodes, params.contextSize, params.minJumpSize);
+    var d = new differ(beforeText, beforeLines, afterText, afterLines, diffRanges, params);
+    return d.buildView_();
+  }
+
+  static buildViewFromOps(beforeText: string, afterText: string, ops: DiffRange[], params: Partial<PatchOptions>) {
+    const beforeLines = beforeText ? difflib.stringAsLines(beforeText) : [];
+    const afterLines = afterText ? difflib.stringAsLines(afterText) : [];
+    var d = new differ(beforeText, beforeLines, afterText, afterLines, ops, params);
     return d.buildView_();
   }
 }
@@ -219,4 +235,5 @@ function highlightText(text: string, language: string): string[] | null {
   opcodesToDiffRanges: addSkips,
   htmlTextMapper,
   buildView: differ.buildView,
+  buildViewFromOps: differ.buildViewFromOps,
 };

@@ -1,0 +1,107 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel=stylesheet href="codediff.css">
+
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+
+  <link rel="stylesheet" href="googlecode.css">
+  <script src="http://yandex.st/highlightjs/8.0/highlight.min.js"></script>
+</head>
+<body>
+<p>Here's a code diff where the diff was provided from a patch:</p>
+<div id="diffview">
+</div>
+
+<script src="difflib.js"></script>
+<script src="dist/codediff.js"></script>
+
+<script type="text/javascript">
+function renderDiff(diffDiv, contentsBefore, contentsAfter, ops) {
+  diffDiv.appendChild(
+    codediff.buildViewFromOps(
+      contentsBefore,
+      contentsAfter,
+      ops,
+      {
+        language: 'js',
+      }
+    )
+  );
+}
+
+const beforeText = `/**
+ * Convert a JS date to a string appropriate to display on an axis that
+ * is displaying values at the stated granularity.
+ * @param {Date} date The date to format
+ * @param {number} granularity One of the Dygraph granularity constants
+ * @return {string} The formatted date
+ * @private
+ */
+Dygraph.dateAxisFormatter = function(date, granularity) {
+  if (granularity >= Dygraph.DECADAL) {
+    return '' + date.getFullYear();
+  } else if (granularity >= Dygraph.MONTHLY) {
+    return Dygraph.SHORT_MONTH_NAMES_[date.getMonth()] + ' ' + date.getFullYear();
+  } else {
+    var frac = date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds() + date.getMilliseconds();
+    if (frac === 0 || granularity >= Dygraph.DAILY) {
+      // e.g. '21Jan' (%d%b)
+      var nd = new Date(date.getTime() + 3600*1000);
+      return Dygraph.zeropad(nd.getDate()) + Dygraph.SHORT_MONTH_NAMES_[nd.getMonth()];
+    } else {
+      return Dygraph.hmsString_(date.getTime());
+    }
+  }
+};
+`;
+
+const afterText = `/**
+ * Convert a JS date to a string appropriate to display on an axis that
+ * @param {Date} date The date to format
+ * @param {number} granularity One of the Dygraph granularity constants
+ * @return {string} The formatted date
+ * @private
+ */
+Dygraph.dateAxisFormatter = function(date, granularity) {
+  if (granularity >= Dygraph.DECADAL) {
+    return 'xx' + date.getFullYear();
+  } else if (granularity >= Dygraph.MONTHLY) {
+    return Dygraph.SHORT_MONTH_NAMES_[date.getMonth()] + ' ' + date.getFullYear();
+  } else {
+    var frac = date.getHours() * 3600 + date.getMinutes() * 60 +
+        date.getSeconds() + date.getMilliseconds();
+    if (frac === 0 || granularity >= Dygraph.DAILY) {
+      // e.g. '21Jan' (%d%b)
+      var nd = new Date(date.getTime() + 3600*1000);
+      return Dygraph.zeropad(nd.getDate()) + Dygraph.SHORT_MONTH_NAMES_[nd.getMonth()];
+      return "something else";
+    } else {
+      return Dygraph.hmsString_(date.getTime());
+    }
+  }
+};
+`;
+
+const ops = [
+  {type: 'equal', before: [0, 2], after: [0, 2]},
+  {type: 'delete', before: [2, 3], after: [2, 2]},
+  {type: 'equal', before: [3, 6], after: [2, 5]},
+  {type: 'skip', before: [6, 7], after: [5, 6]},
+  {type: 'equal', before: [7, 10], after: [6, 9]},
+  {type: 'replace', before: [10, 11], after: [9, 10]},
+  {type: 'equal', before: [11, 14], after: [10, 13]},
+  {type: 'replace', before: [14, 15], after: [13, 15]},
+  {type: 'equal', before: [15, 19], after: [15, 19]},
+  {type: 'insert', before: [19, 19], after: [19, 20]},
+  {type: 'equal', before: [19, 22], after: [20, 23]},
+  {type: 'skip', before: [22, 25], after: [23, 26]},
+];
+
+var diffDiv = $("#diffview").get(0);
+renderDiff(diffDiv, beforeText, afterText, ops);
+</script>
+
+</body>
+</html>
