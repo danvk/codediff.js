@@ -20,6 +20,13 @@ td.code {
   word-wrap: break-word;
 }
 
+table.diff td.code {
+  word-break: break-all;
+}
+table.diff.word-wrap td.code {
+  word-break: normal;
+}
+
 table.diff td {
   vertical-align: top;
 }
@@ -62,17 +69,10 @@ table.diff td:nth-child(2) {
   background: #f7f7f7;
 }
 
-.diff .delete {
+.diff .delete, .before.replace {
   background-color: #fee;
 }
-.diff .insert {
-  background-color: #efe;
-}
-
-.before.replace {
-  background-color: #fee;
-}
-.after.replace {
+.diff .insert, .after.replace {
   background-color: #efe;
 }
 
