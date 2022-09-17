@@ -1,5 +1,5 @@
 import jquery from 'jquery';
-import highlightjs from 'highlightjs';
+import highlightjs from 'highlight.js';
 
 declare global {
     export const $: JQueryStatic;

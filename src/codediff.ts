@@ -214,7 +214,7 @@ function highlightText(text: string, language: string): string[] | null {
   if (text === null) return [];
 
   // TODO(danvk): look into suppressing highlighting if .relevance is low.
-  const html = hljs.highlight(language, text, true).value;
+  const html = hljs.highlight(text, {language, ignoreIllegals: true}).value;
 
   // Some of the <span>s might cross lines, which won't work for our diff
   // structure. We convert them to single-line only <spans> here.

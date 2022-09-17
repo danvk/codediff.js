@@ -15,11 +15,10 @@
     }
   },
   "dependencies": {
-    "highlight.js": "~8.0.0",
+    "highlight.js": "^11.6.0",
     "jquery": ">=2.0.0"
   },
   "devDependencies": {
-    "@types/highlightjs": "^9.12.2",
     "@types/jquery": "^3.5.14",
     "assert": "*",
     "grunt": "~0.4.0",
