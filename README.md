@@ -34,6 +34,9 @@ $('#diffview').append(
     codediff.buildView(codeBefore, codeAfter, {
         /* options -- see below */
     }));
+
+// or provide your own diff:
+codediff.buildViewFromOps(codeBefore, codeAfter, diffOps, options)
 </script>
 ```
 
@@ -69,4 +72,9 @@ To iterate on the project locally, open one of the `test*.html` files.
 To run the tests, run:
 
     npm install
-    grunt test
+    npm run watch
+    open test/index.html
+
+To build, run:
+
+    npm run build
