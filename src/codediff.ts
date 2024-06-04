@@ -13,19 +13,37 @@ import {buildRowTr, buildSkipTr} from './table-utils';
 
 export interface PatchOptions {
   minJumpSize: number;
+  expandLines: number;
   language: string | null;
   beforeName: string;
   afterName: string;
   wordWrap: boolean;
 }
 
-/** Number of additional lines to show when you click an expand arrow. */
-const EXPAND_AMOUNT = 1;
-
 export interface DiffOptions {
+  /** Number of equal lines of context to show around changed lines */
   contextSize: number;
+  /** Minimum number of skipped lines to elide into a "jump" row */
   minJumpSize: number;
+  /** Number of additional lines to show when you click an expand arrow. */
+  expandLines: number;
 }
+
+const DEFAULT_OPTIONS: DiffOptions = {
+  contextSize: 3,
+  minJumpSize: 10,
+  expandLines: 10,
+};
+
+const DEFAULT_PARAMS: PatchOptions = {
+  minJumpSize: 10,
+  language: null,
+  beforeName: 'Before',
+  afterName: 'After',
+  wordWrap: false,
+  expandLines: 10,
+};
+
 
 export class differ {
   params: PatchOptions;
@@ -43,15 +61,7 @@ export class differ {
     ops: DiffRange[],
     params: Partial<PatchOptions>
   ) {
-    const defaultParams: PatchOptions = {
-      minJumpSize: 10,
-      language: null,
-      beforeName: 'Before',
-      afterName: 'After',
-      wordWrap: false,
-    };
-
-    this.params = {...defaultParams, ...params};
+    this.params = {...DEFAULT_PARAMS, ...params};
 
     this.beforeLines = beforeLines;
     this.afterLines = afterLines;
@@ -74,9 +84,10 @@ export class differ {
    */
   attachHandlers_(el: JQuery) {
     // TODO: gross duplication with buildView_
-    var language = this.params.language,
-      beforeLines = language ? this.beforeLinesHighlighted! : this.beforeLines,
-      afterLines = language ? this.afterLinesHighlighted! : this.afterLines;
+    const language = this.params.language;
+    const beforeLines = language ? this.beforeLinesHighlighted! : this.beforeLines;
+    const afterLines = language ? this.afterLinesHighlighted! : this.afterLines;
+    const expandLines = this.params.expandLines;
     $(el).on('click', '.skip a, span.skip', function (e) {
       e.preventDefault();
       const $skip = $(this).closest('.skip');
@@ -85,20 +96,21 @@ export class differ {
       const beforeIdx = skipData.beforeStartIndex;
       const afterIdx = skipData.afterStartIndex;
       const jump = skipData.jumpLength;
-      if (jump < EXPAND_AMOUNT) {
+      if (jump < expandLines) {
         type = 'all';
       }
       const newTrs = [];
-      const a = type === 'up' || type === 'all' ? 0 : jump - EXPAND_AMOUNT;
-      const b = type === 'up' ? EXPAND_AMOUNT : jump;
+      const a = type === 'up' || type === 'all' ? 0 : jump - expandLines;
+      const b = type === 'up' ? expandLines : jump;
 
       if (type === 'down') {
         newTrs.push(
           buildSkipTr(
             beforeIdx,
-            afterIdx - EXPAND_AMOUNT,
-            jump - EXPAND_AMOUNT,
+            afterIdx - expandLines,
+            jump - expandLines,
             skipData.header,
+            expandLines,
           )
         );
       }
@@ -119,10 +131,11 @@ export class differ {
       if (type === 'up') {
         newTrs.push(
           buildSkipTr(
-            beforeIdx + EXPAND_AMOUNT,
+            beforeIdx + expandLines,
             afterIdx,
-            jump - EXPAND_AMOUNT,
+            jump - expandLines,
             skipData.header,
+            expandLines,
           )
         );
       }
@@ -172,6 +185,7 @@ export class differ {
     const language = this.params.language;
     const beforeLines = language ? this.beforeLinesHighlighted! : this.beforeLines;
     const afterLines = language ? this.afterLinesHighlighted! : this.afterLines;
+    const expandLines = this.params.expandLines;
 
     const $table = $('<table class="diff">');
     $table.append(
@@ -188,7 +202,7 @@ export class differ {
       const numRows = Math.max(numBeforeRows, numAfterRows);
 
       if (type == 'skip') {
-        $table.append(buildSkipTr(range.before[0], range.after[0], numRows, range.header));
+        $table.append(buildSkipTr(range.before[0], range.after[0], numRows, range.header ?? null, expandLines));
       } else {
         for (let j = 0; j < numRows; j++) {
           const beforeIdx = j < numBeforeRows ? range.before[0] + j : null;
@@ -219,7 +233,7 @@ export class differ {
   }
 
   static buildView(beforeText: string | null, afterText: string | null, userParams: Partial<DiffOptions & PatchOptions>) {
-    const params: DiffOptions = {contextSize: 3, minJumpSize: 10, wordWrap: false, ...userParams};
+    const params: DiffOptions & PatchOptions = {...DEFAULT_OPTIONS, ...DEFAULT_PARAMS, ...userParams};
     const beforeLines = beforeText ? difflib.stringAsLines(beforeText) : [];
     const afterLines = afterText ? difflib.stringAsLines(afterText) : [];
     const sm = new difflib.SequenceMatcher(beforeLines, afterLines);

@@ -50,9 +50,10 @@ export function buildSkipTr(
   beforeIdx: number,
   afterIdx: number,
   numRowsSkipped: number,
-  header?: string,
+  header: string | null,
+  expandLines: number,
 ): HTMLElement {
-  const arrows = numRowsSkipped <= 1 ?
+  const arrows = numRowsSkipped <= expandLines ?
     `<span class="skip">↕</span>` : `<span class="skip expand-up">↥</span><span class="skip expand-down">↧</span>`;
   const showMore = `<a href="#">Show ${numRowsSkipped} more lines</a>`;
   const headerHTML = header ? `<span class="hunk-header">${header}</span>` : '';
