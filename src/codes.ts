@@ -70,3 +70,11 @@ export function addSkips(
 
   return ranges;
 }
+
+/** This removes small skips like "skip 1 line" that are disallowed by minJumpSize. */
+export function enforceMinJumpSize(diffs: DiffRange[], minJumpSize: number): DiffRange[] {
+  return diffs.map(d => d.type === 'skip' && d.before[1] - d.before[0] < minJumpSize ? {
+    ...d,
+    type: 'equal',
+  } : d);
+}

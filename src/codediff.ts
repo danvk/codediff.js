@@ -5,7 +5,7 @@ import {
   simplifyCodes,
   splitIntoWords,
 } from './char-diffs';
-import {DiffRange, addSkips} from './codes';
+import {DiffRange, addSkips, enforceMinJumpSize} from './codes';
 import {distributeSpans} from './dom-utils';
 import {htmlTextMapper} from './html-text-mapper';
 import {guessLanguageUsingContents, guessLanguageUsingFileName} from './language';
@@ -246,7 +246,9 @@ export class differ {
   static buildViewFromOps(beforeText: string, afterText: string, ops: DiffRange[], params: Partial<PatchOptions>) {
     const beforeLines = beforeText ? difflib.stringAsLines(beforeText) : [];
     const afterLines = afterText ? difflib.stringAsLines(afterText) : [];
-    var d = new differ(beforeText, beforeLines, afterText, afterLines, ops, params);
+    const fullParams = {...DEFAULT_PARAMS, ...params};
+    const diffRanges = enforceMinJumpSize(ops, fullParams.minJumpSize);
+    var d = new differ(beforeText, beforeLines, afterText, afterLines, diffRanges, params);
     return d.buildView_();
   }
 }
