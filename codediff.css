@@ -58,6 +58,13 @@ table.diff .line-no:last-child {
 table.diff td:nth-child(2) {
   border-right: 1px solid #ddd;
 }
+table.diff tr.skip-row td {
+  border-left: none;
+  border-right: none;
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+  padding: 0.5em;
+}
 
 .line-no, .code {
   padding: 2px;
@@ -66,7 +73,17 @@ table.diff td:nth-child(2) {
 }
 .diff .skip {
   text-align: center;
-  background: #f7f7f7;
+  background: white;
+  color: #999;
+}
+.arrows-left {
+  float: left;
+}
+.arrows-right {
+  float: right;
+}
+.expand-up + .expand-down {
+  margin-left: 0.25em;
 }
 
 .hunk-header {
