@@ -39,12 +39,12 @@ table.diff td {
 .line-no:first-child {
   background-image:
       linear-gradient(to left, #f7f7f7, #f7f7f7 3px, transparent, transparent 6px, #f7f7f7 6px),
-      linear-gradient(#f7f7f7, #f7f7f7 1.4em, #aaa 1.4em);
+      linear-gradient(#f7f7f7, #f7f7f7 1.5em, #aaa 1.5em);
 }
 .line-no:last-child {
   background-image:
       linear-gradient(to right, #f7f7f7, #f7f7f7 3px, transparent, transparent 6px, #f7f7f7 6px),
-      linear-gradient(#f7f7f7, #f7f7f7 1.4em, #aaa 1.4em);
+      linear-gradient(#f7f7f7, #f7f7f7 1.5em, #aaa 1.5em);
 }
 
 table.diff .line-no:first-child {

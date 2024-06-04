@@ -137,11 +137,11 @@ export class differ {
 
   buildView_() {
     // TODO: is this distinction necessary?
-    var language = this.params.language,
-      beforeLines = language ? this.beforeLinesHighlighted! : this.beforeLines,
-      afterLines = language ? this.afterLinesHighlighted! : this.afterLines;
+    const language = this.params.language;
+    const beforeLines = language ? this.beforeLinesHighlighted! : this.beforeLines;
+    const afterLines = language ? this.afterLinesHighlighted! : this.afterLines;
 
-    var $table = $('<table class="diff">');
+    const $table = $('<table class="diff">');
     $table.append(
       $('<tr>').append(
         $('<th class="diff-header" colspan=2>').text(this.params.beforeName),
@@ -149,19 +149,18 @@ export class differ {
       ),
     );
 
-    for (var i = 0; i < this.diffRanges.length; i++) {
-      var range = this.diffRanges[i],
-        type = range.type,
-        numBeforeRows = range.before[1] - range.before[0],
-        numAfterRows = range.after[1] - range.after[0],
-        numRows = Math.max(numBeforeRows, numAfterRows);
+    for (const range of this.diffRanges) {
+      const type = range.type;
+      const numBeforeRows = range.before[1] - range.before[0];
+      const numAfterRows = range.after[1] - range.after[0];
+      const numRows = Math.max(numBeforeRows, numAfterRows);
 
       if (type == 'skip') {
-        $table.append(buildSkipTr(range.before[0], range.after[0], numRows));
+        $table.append(buildSkipTr(range.before[0], range.after[0], numRows, range.header));
       } else {
-        for (var j = 0; j < numRows; j++) {
-          var beforeIdx = j < numBeforeRows ? range.before[0] + j : null,
-            afterIdx = j < numAfterRows ? range.after[0] + j : null;
+        for (let j = 0; j < numRows; j++) {
+          const beforeIdx = j < numBeforeRows ? range.before[0] + j : null;
+          const afterIdx = j < numAfterRows ? range.after[0] + j : null;
           $table.append(
             buildRowTr(
               type,
@@ -180,7 +179,7 @@ export class differ {
       $table.addClass('word-wrap');
     }
 
-    var $container = $('<div class="diff">');
+    const $container = $('<div class="diff">');
     $container.append($table);
     // Attach event handlers & apply char diffs.
     this.attachHandlers_($container);

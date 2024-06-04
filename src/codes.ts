@@ -4,6 +4,7 @@ export interface DiffRange {
   type: OpType | 'skip';
   before: [start: number, limit: number];
   after: [start: number, limit: number];
+  header?: string;
 }
 
 /**

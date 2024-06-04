@@ -50,17 +50,15 @@ export function buildSkipTr(
   beforeIdx: number,
   afterIdx: number,
   numRowsSkipped: number,
+  header?: string,
 ): HTMLElement {
-  var $tr = $(
-    '<tr>' +
-      '<td class="line-no">&hellip;</td>' +
-      '<td colspan="2" class="skip code">' +
-      '<a href="#">Show ' +
-      numRowsSkipped +
-      ' more lines</a>' +
-      '</td>' +
-      '<td class="line-no">&hellip;</td>' +
-      '</tr>',
+  const $tr = $(
+    `<tr>
+      <td class="line-no">&hellip;</td>
+      <td colspan="2" class="skip code"
+      ><a href="#">Show ${numRowsSkipped} more lines</a> ${header ?? ''}</td>
+      <td class="line-no">&hellip;</td>
+      </tr>`
   );
   $tr.find('.skip').data({
     beforeStartIndex: beforeIdx,
