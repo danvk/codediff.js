@@ -106,8 +106,8 @@ export class differ {
       if (type === 'down') {
         newTrs.push(
           buildSkipTr(
-            beforeIdx - expandLines + 1,
-            afterIdx - expandLines + 1,
+            beforeIdx,
+            afterIdx,
             jump - expandLines,
             skipData.header,
             expandLines,

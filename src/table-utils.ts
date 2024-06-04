@@ -59,7 +59,7 @@ export function buildSkipTr(
   const headerHTML = header ? `<span class="hunk-header">${header}</span>` : '';
   const $tr = $(
     `<tr class="skip-row">
-      <td colspan="4" class="skip code"><span class="arrows-left">${arrows}</span>${showMore} ${headerHTML}<span class="arrows-right">${arrows}</span></td>
+      <td colspan="4" class="skip code"><span class="arrows-left">${arrows}</span>${showMore} ${headerHTML}<span class="arrows-right">${arrows}</span> ${beforeIdx} / ${afterIdx}</td>
     </tr>`
   );
   $tr.find('.skip').data({
