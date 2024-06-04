@@ -55,13 +55,11 @@ export function buildSkipTr(
   const arrows = numRowsSkipped < 20 ?
     `<span class="skip">↕</span>` : `<span class="skip expand-down">↧</span><span class="skip expand-up">↥</span>`;
   const showMore = `<a href="#">Show ${numRowsSkipped} more lines</a>`;
-  const center = header ?
-    `<td class="skip code">${showMore}</td><td class="skip code hunk-header">${header}</td>` :
-    `<td colspan="2" class="skip code">${showMore}</td>`;
+  const headerHTML = header ? `<span class="hunk-header">${header}</span>` : '';
   const $tr = $(
     `<tr>
       <td class="line-no">${arrows}</td>
-      ${center}
+      <td colspan="2" class="skip code">${showMore} ${headerHTML}</td>
       <td class="line-no">${arrows}</td>
       </tr>`
   );

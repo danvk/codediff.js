@@ -76,7 +76,7 @@ export class differ {
     var language = this.params.language,
       beforeLines = language ? this.beforeLinesHighlighted! : this.beforeLines,
       afterLines = language ? this.afterLinesHighlighted! : this.afterLines;
-    $(el).on('click', '.skip a', function (e) {
+    $(el).on('click', '.skip a, span.skip', function (e) {
       e.preventDefault();
       var skipData = $(this).closest('.skip').data();
       var beforeIdx = skipData.beforeStartIndex;
