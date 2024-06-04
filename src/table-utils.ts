@@ -52,8 +52,8 @@ export function buildSkipTr(
   numRowsSkipped: number,
   header?: string,
 ): HTMLElement {
-  const arrows = numRowsSkipped < 20 ?
-    `<span class="skip">↕</span>` : `<span class="skip expand-down">↧</span><span class="skip expand-up">↥</span>`;
+  const arrows = numRowsSkipped <= 1 ?
+    `<span class="skip">↕</span>` : `<span class="skip expand-up">↥</span><span class="skip expand-down">↧</span>`;
   const showMore = `<a href="#">Show ${numRowsSkipped} more lines</a>`;
   const headerHTML = header ? `<span class="hunk-header">${header}</span>` : '';
   const $tr = $(
@@ -67,6 +67,7 @@ export function buildSkipTr(
     beforeStartIndex: beforeIdx,
     afterStartIndex: afterIdx,
     jumpLength: numRowsSkipped,
+    header,
   });
   return $tr.get(0)!;
 }

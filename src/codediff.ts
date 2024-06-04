@@ -19,7 +19,8 @@ export interface PatchOptions {
   wordWrap: boolean;
 }
 
-// ↕↧↥
+/** Number of additional lines to show when you click an expand arrow. */
+const EXPAND_AMOUNT = 1;
 
 export interface DiffOptions {
   contextSize: number;
@@ -78,12 +79,31 @@ export class differ {
       afterLines = language ? this.afterLinesHighlighted! : this.afterLines;
     $(el).on('click', '.skip a, span.skip', function (e) {
       e.preventDefault();
-      var skipData = $(this).closest('.skip').data();
-      var beforeIdx = skipData.beforeStartIndex;
-      var afterIdx = skipData.afterStartIndex;
-      var jump = skipData.jumpLength;
-      var newTrs = [];
-      for (var i = 0; i < jump; i++) {
+      const $skip = $(this).closest('.skip');
+      const skipData = $skip.data();
+      let type = $skip.hasClass('expand-down') ? 'down' : $skip.hasClass('expand-up') ? 'up' : 'all';
+      const beforeIdx = skipData.beforeStartIndex;
+      const afterIdx = skipData.afterStartIndex;
+      const jump = skipData.jumpLength;
+      if (jump < EXPAND_AMOUNT) {
+        type = 'all';
+      }
+      const newTrs = [];
+      const a = type === 'up' || type === 'all' ? 0 : jump - EXPAND_AMOUNT;
+      const b = type === 'up' ? EXPAND_AMOUNT : jump;
+
+      if (type === 'down') {
+        newTrs.push(
+          buildSkipTr(
+            beforeIdx,
+            afterIdx - EXPAND_AMOUNT,
+            jump - EXPAND_AMOUNT,
+            skipData.header,
+          )
+        );
+      }
+
+      for (let i = a; i < b; i++) {
         newTrs.push(
           buildRowTr(
             'equal',
@@ -96,7 +116,17 @@ export class differ {
         );
       }
 
-      // Replace the "skip" rows with real code.
+      if (type === 'up') {
+        newTrs.push(
+          buildSkipTr(
+            beforeIdx + EXPAND_AMOUNT,
+            afterIdx,
+            jump - EXPAND_AMOUNT,
+            skipData.header,
+          )
+        );
+      }
+      // Replace the old "skip" row with the new code and (maybe) new skip row.
       var $skipTr = $(this).closest('tr');
       $skipTr.replaceWith(newTrs as HTMLElement[]);
     });
