@@ -5,7 +5,7 @@ import {
   simplifyCodes,
   splitIntoWords,
 } from './char-diffs';
-import {DiffRange, addSkips, enforceMinJumpSize} from './codes';
+import {DiffRange, addSkips} from './codes';
 import {distributeSpans} from './dom-utils';
 import {htmlTextMapper} from './html-text-mapper';
 import {guessLanguageUsingContents, guessLanguageUsingFileName} from './language';
@@ -267,6 +267,15 @@ function highlightText(text: string, language: string): string[] | null {
   // structure. We convert them to single-line only <spans> here.
   return distributeSpans(html);
 }
+
+/** This removes small skips like "skip 1 line" that are disallowed by minJumpSize. */
+function enforceMinJumpSize(diffs: DiffRange[], minJumpSize: number): DiffRange[] {
+  return diffs.map(d => d.type === 'skip' && d.before[1] - d.before[0] < minJumpSize ? {
+    ...d,
+    type: 'equal',
+  } : d);
+}
+
 
 (window as any).codediff = {
   ...differ,
