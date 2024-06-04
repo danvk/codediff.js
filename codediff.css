@@ -69,6 +69,15 @@ table.diff td:nth-child(2) {
   background: #f7f7f7;
 }
 
+.diff .hunk-header {
+  color: #777;
+  text-align: left;
+}
+
+td.skip.code:has(+ .hunk-header) {
+  border-right: none;
+}
+
 .diff .delete, .before.replace {
   background-color: #fee;
 }

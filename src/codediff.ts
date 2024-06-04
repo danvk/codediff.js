@@ -19,6 +19,8 @@ export interface PatchOptions {
   wordWrap: boolean;
 }
 
+// ↕↧↥
+
 export interface DiffOptions {
   contextSize: number;
   minJumpSize: number;
