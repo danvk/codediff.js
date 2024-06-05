@@ -49,6 +49,7 @@ Here are possible keys you can pass through the options parameter:
 * `afterName`: Text to place above the right side of the diff.
 * `contextSize`: Minimum number of lines of context to show around each diff hunk. (default: _3_).
 * `minJumpSize`: Minimum number of equal lines to collapse into a "Show N more lines" link. (default: _10_)
+* `expandLines`: Number of lines to offer to expand at a time ("Show 10 more lines below"). (default: _10_)
 * `wordWrap`: By default, code will go all the way to the right margin of the diff. If there are 60 characters of space, character 61 will wrap to the next line, even mid-word. To wrap at word boundaries instead, set this option.
 
 Here's an example usage with a filled-out options parameter:
@@ -61,6 +62,7 @@ $('#diffview').append(
         afterName: 'newfilename.py',
         contextSize: 8,
         minJumpSize: 5,
+        expandLines: 5,
         wordWrap: true
     }));
 ```

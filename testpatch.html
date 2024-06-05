@@ -7,7 +7,7 @@
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 
   <link rel="stylesheet" href="googlecode.css">
-  <script src="http://yandex.st/highlightjs/8.0/highlight.min.js"></script>
+  <script src="vendor/highlight.min.js"></script>
 </head>
 <body>
 <p>Here's a code diff where the diff was provided from a patch:</p>
@@ -26,6 +26,7 @@ function renderDiff(diffDiv, contentsBefore, contentsAfter, ops) {
       ops,
       {
         language: 'js',
+        expandLines: 1,
       }
     )
   );
@@ -87,8 +88,8 @@ Dygraph.dateAxisFormatter = function(date, granularity) {
 const ops = [
   {type: 'equal', before: [0, 2], after: [0, 2]},
   {type: 'delete', before: [2, 3], after: [2, 2]},
-  {type: 'equal', before: [3, 6], after: [2, 5]},
-  {type: 'skip', before: [6, 7], after: [5, 6]},
+  {type: 'equal', before: [3, 5], after: [2, 4]},
+  {type: 'skip', before: [5, 7], after: [4, 6], header: 'Dygraph.dateAxisFormatter'},
   {type: 'equal', before: [7, 10], after: [6, 9]},
   {type: 'replace', before: [10, 11], after: [9, 10]},
   {type: 'equal', before: [11, 14], after: [10, 13]},

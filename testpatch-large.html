@@ -1,0 +1,627 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel=stylesheet href="codediff.css">
+
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+
+  <link rel="stylesheet" href="googlecode.css">
+  <style>
+    td.code {
+      width: 81ch;
+    }
+  </style>
+  <script src="vendor/highlight.min.js"></script>
+</head>
+<body>
+<p>Here's a code diff where the diff was provided from a patch:</p>
+<div id="diffview">
+</div>
+
+<!-- This is codediff.ts d22a5f5..805e8c1 in this repo -->
+
+<script src="difflib.js"></script>
+<script src="dist/codediff.js"></script>
+
+<script type="text/javascript">
+function renderDiff(diffDiv, contentsBefore, contentsAfter, ops) {
+  diffDiv.appendChild(
+    codediff.buildViewFromOps(
+      contentsBefore,
+      contentsAfter,
+      ops,
+      {
+        language: 'ts',
+      }
+    )
+  );
+}
+
+const beforeText = `import {
+  addCharacterDiffs,
+  codesToHtml,
+  computeCharacterDiffs,
+  simplifyCodes,
+  splitIntoWords,
+} from './char-diffs';
+import {DiffRange, addSkips} from './codes';
+import {distributeSpans} from './dom-utils';
+import {htmlTextMapper} from './html-text-mapper';
+import {guessLanguageUsingContents, guessLanguageUsingFileName} from './language';
+import {buildRowTr, buildSkipTr} from './table-utils';
+
+export interface PatchOptions {
+  minJumpSize: number;
+  language: string | null;
+  beforeName: string;
+  afterName: string;
+  wordWrap: boolean;
+}
+
+export interface DiffOptions {
+  contextSize: number;
+  minJumpSize: number;
+}
+
+export class differ {
+  params: PatchOptions;
+  beforeLines: string[];
+  afterLines: string[];
+  diffRanges: DiffRange[];
+  beforeLinesHighlighted: string[] | null | undefined;
+  afterLinesHighlighted: string[] | null | undefined;
+
+  constructor(
+    beforeText: string | null,
+    beforeLines: string[],
+    afterText: string | null,
+    afterLines: string[],
+    ops: DiffRange[],
+    params: Partial<PatchOptions>
+  ) {
+    const defaultParams: PatchOptions = {
+      minJumpSize: 10,
+      language: null,
+      beforeName: 'Before',
+      afterName: 'After',
+      wordWrap: false,
+    };
+
+    this.params = {...defaultParams, ...params};
+
+    this.beforeLines = beforeLines;
+    this.afterLines = afterLines;
+    this.diffRanges = ops;
+
+    const {language} = this.params;
+    if (language) {
+      this.beforeLinesHighlighted = highlightText(beforeText ?? '', language);
+      this.afterLinesHighlighted = highlightText(afterText ?? '', language);
+    }
+    // TODO: from this point on language shouldn't need to be used.
+  }
+
+  maxLineNumber() {
+    return Math.max(this.beforeLines.length, this.afterLines.length);
+  }
+
+  /**
+   * Attach event listeners, notably for the "show more" links.
+   */
+  attachHandlers_(el: JQuery) {
+    // TODO: gross duplication with buildView_
+    var language = this.params.language,
+      beforeLines = language ? this.beforeLinesHighlighted! : this.beforeLines,
+      afterLines = language ? this.afterLinesHighlighted! : this.afterLines;
+    $(el).on('click', '.skip a', function (e) {
+      e.preventDefault();
+      var skipData = $(this).closest('.skip').data();
+      var beforeIdx = skipData.beforeStartIndex;
+      var afterIdx = skipData.afterStartIndex;
+      var jump = skipData.jumpLength;
+      var newTrs = [];
+      for (var i = 0; i < jump; i++) {
+        newTrs.push(
+          buildRowTr(
+            'equal',
+            beforeIdx + i + 1,
+            beforeLines[beforeIdx + i],
+            afterIdx + i + 1,
+            afterLines[afterIdx + i],
+            language,
+          ),
+        );
+      }
+
+      // Replace the "skip" rows with real code.
+      var $skipTr = $(this).closest('tr');
+      $skipTr.replaceWith(newTrs as HTMLElement[]);
+    });
+
+    // Hooks for single-column text selection.
+    // See http://stackoverflow.com/a/27530627/388951 for details.
+    $(el)
+      .on('mousedown', function (e) {
+        var $td = $(e.target).closest('td'),
+          isLeft = $td.is('.before'),
+          isRight = $td.is('.after');
+        if (!isLeft && !isRight) return;
+
+        el.removeClass('selecting-left selecting-right').addClass(
+          'selecting-' + (isLeft ? 'left' : 'right'),
+        );
+      })
+      .on('copy', function (e) {
+        var isLeft = el.is('.selecting-left');
+
+        var sel = window.getSelection()!,
+          range = sel.getRangeAt(0),
+          doc = range.cloneContents(),
+          nodes = doc.querySelectorAll('td.' + (isLeft ? 'before' : 'after')),
+          text = '';
+
+        if (nodes.length === 0) {
+          text = doc.textContent!;
+        } else {
+          [].forEach.call(nodes, function (td: Element, i) {
+            text += (i ? '\n' : '') + td.textContent;
+          });
+        }
+
+        var clipboardData = (e.originalEvent as ClipboardEvent).clipboardData;
+        clipboardData?.setData('text', text);
+        e.preventDefault();
+      });
+  }
+
+  buildView_() {
+    // TODO: is this distinction necessary?
+    var language = this.params.language,
+      beforeLines = language ? this.beforeLinesHighlighted! : this.beforeLines,
+      afterLines = language ? this.afterLinesHighlighted! : this.afterLines;
+
+    var $table = $('<table class="diff">');
+    $table.append(
+      $('<tr>').append(
+        $('<th class="diff-header" colspan=2>').text(this.params.beforeName),
+        $('<th class="diff-header" colspan=2>').text(this.params.afterName),
+      ),
+    );
+
+    for (var i = 0; i < this.diffRanges.length; i++) {
+      var range = this.diffRanges[i],
+        type = range.type,
+        numBeforeRows = range.before[1] - range.before[0],
+        numAfterRows = range.after[1] - range.after[0],
+        numRows = Math.max(numBeforeRows, numAfterRows);
+
+      if (type == 'skip') {
+        $table.append(buildSkipTr(range.before[0], range.after[0], numRows));
+      } else {
+        for (var j = 0; j < numRows; j++) {
+          var beforeIdx = j < numBeforeRows ? range.before[0] + j : null,
+            afterIdx = j < numAfterRows ? range.after[0] + j : null;
+          $table.append(
+            buildRowTr(
+              type,
+              beforeIdx != null ? 1 + beforeIdx : null,
+              beforeIdx != null ? beforeLines[beforeIdx] : undefined,
+              afterIdx != null ? 1 + afterIdx : null,
+              afterIdx != null ? afterLines[afterIdx] : undefined,
+              language,
+            ),
+          );
+        }
+      }
+    }
+
+    if (this.params.wordWrap) {
+      $table.addClass('word-wrap');
+    }
+
+    var $container = $('<div class="diff">');
+    $container.append($table);
+    // Attach event handlers & apply char diffs.
+    this.attachHandlers_($container);
+    return $container.get(0);
+  }
+
+  static buildView(beforeText: string | null, afterText: string | null, userParams: Partial<DiffOptions & PatchOptions>) {
+    const params: DiffOptions = {contextSize: 3, minJumpSize: 10, wordWrap: false, ...userParams};
+    const beforeLines = beforeText ? difflib.stringAsLines(beforeText) : [];
+    const afterLines = afterText ? difflib.stringAsLines(afterText) : [];
+    const sm = new difflib.SequenceMatcher(beforeLines, afterLines);
+    const opcodes = sm.get_opcodes();
+    const diffRanges = addSkips(opcodes, params.contextSize, params.minJumpSize);
+    var d = new differ(beforeText, beforeLines, afterText, afterLines, diffRanges, params);
+    return d.buildView_();
+  }
+
+  static buildViewFromOps(beforeText: string, afterText: string, ops: DiffRange[], params: Partial<PatchOptions>) {
+    const beforeLines = beforeText ? difflib.stringAsLines(beforeText) : [];
+    const afterLines = afterText ? difflib.stringAsLines(afterText) : [];
+    var d = new differ(beforeText, beforeLines, afterText, afterLines, ops, params);
+    return d.buildView_();
+  }
+}
+
+/**
+ * @return Lines marked up with syntax <span>s. The <span>
+ *     tags will be balanced within each line.
+ */
+function highlightText(text: string, language: string): string[] | null {
+  if (text === null) return [];
+
+  // TODO(danvk): look into suppressing highlighting if .relevance is low.
+  const html = hljs.highlight(text, {language, ignoreIllegals: true}).value;
+
+  // Some of the <span>s might cross lines, which won't work for our diff
+  // structure. We convert them to single-line only <spans> here.
+  return distributeSpans(html);
+}
+
+(window as any).codediff = {
+  ...differ,
+  // These are exported for testing
+  distributeSpans_: distributeSpans,
+  simplifyCodes_: simplifyCodes,
+  codesToHtml_: codesToHtml,
+  addCharacterDiffs_: addCharacterDiffs,
+  computeCharacterDiffs_: computeCharacterDiffs,
+  splitIntoWords_: splitIntoWords,
+  guessLanguageUsingFileName,
+  guessLanguageUsingContents,
+  opcodesToDiffRanges: addSkips,
+  htmlTextMapper,
+  buildView: differ.buildView,
+  buildViewFromOps: differ.buildViewFromOps,
+};
+`;
+
+const afterText = `import {
+  addCharacterDiffs,
+  codesToHtml,
+  computeCharacterDiffs,
+  simplifyCodes,
+  splitIntoWords,
+} from './char-diffs';
+import {DiffRange, addSkips} from './codes';
+import {distributeSpans} from './dom-utils';
+import {htmlTextMapper} from './html-text-mapper';
+import {guessLanguageUsingContents, guessLanguageUsingFileName} from './language';
+import {buildRowTr, buildSkipTr} from './table-utils';
+
+export interface PatchOptions {
+  minJumpSize: number;
+  expandLines: number;
+  language: string | null;
+  beforeName: string;
+  afterName: string;
+  wordWrap: boolean;
+}
+
+export interface DiffOptions {
+  /** Number of equal lines of context to show around changed lines */
+  contextSize: number;
+  /** Minimum number of skipped lines to elide into a "jump" row */
+  minJumpSize: number;
+  /** Number of additional lines to show when you click an expand arrow. */
+  expandLines: number;
+}
+
+const DEFAULT_OPTIONS: DiffOptions = {
+  contextSize: 3,
+  minJumpSize: 10,
+  expandLines: 10,
+};
+
+const DEFAULT_PARAMS: PatchOptions = {
+  minJumpSize: 10,
+  language: null,
+  beforeName: 'Before',
+  afterName: 'After',
+  wordWrap: false,
+  expandLines: 10,
+};
+
+
+export class differ {
+  params: PatchOptions;
+  beforeLines: string[];
+  afterLines: string[];
+  diffRanges: DiffRange[];
+  beforeLinesHighlighted: string[] | null | undefined;
+  afterLinesHighlighted: string[] | null | undefined;
+
+  constructor(
+    beforeText: string | null,
+    beforeLines: string[],
+    afterText: string | null,
+    afterLines: string[],
+    ops: DiffRange[],
+    params: Partial<PatchOptions>
+  ) {
+    this.params = {...DEFAULT_PARAMS, ...params};
+
+    this.beforeLines = beforeLines;
+    this.afterLines = afterLines;
+    this.diffRanges = ops;
+
+    const {language} = this.params;
+    if (language) {
+      this.beforeLinesHighlighted = highlightText(beforeText ?? '', language);
+      this.afterLinesHighlighted = highlightText(afterText ?? '', language);
+    }
+    // TODO: from this point on language shouldn't need to be used.
+  }
+
+  maxLineNumber() {
+    return Math.max(this.beforeLines.length, this.afterLines.length);
+  }
+
+  /**
+   * Attach event listeners, notably for the "show more" links.
+   */
+  attachHandlers_(el: JQuery) {
+    // TODO: gross duplication with buildView_
+    const language = this.params.language;
+    const beforeLines = language ? this.beforeLinesHighlighted! : this.beforeLines;
+    const afterLines = language ? this.afterLinesHighlighted! : this.afterLines;
+    const expandLines = this.params.expandLines;
+    $(el).on('click', '.skip a, span.skip', function (e) {
+      e.preventDefault();
+      const $skip = $(this).closest('.skip');
+      const skipData = $skip.data();
+      let type = $skip.hasClass('expand-down') ? 'down' : $skip.hasClass('expand-up') ? 'up' : 'all';
+      const beforeIdx = skipData.beforeStartIndex;
+      const afterIdx = skipData.afterStartIndex;
+      const jump = skipData.jumpLength;
+      if (jump < expandLines) {
+        type = 'all';
+      }
+      const newTrs = [];
+      const a = type === 'up' || type === 'all' ? 0 : jump - expandLines;
+      const b = type === 'up' ? expandLines : jump;
+
+      if (type === 'down') {
+        newTrs.push(
+          buildSkipTr(
+            beforeIdx - expandLines + 1,
+            afterIdx - expandLines + 1,
+            jump - expandLines,
+            skipData.header,
+            expandLines,
+          )
+        );
+      }
+
+      for (let i = a; i < b; i++) {
+        newTrs.push(
+          buildRowTr(
+            'equal',
+            beforeIdx + i + 1,
+            beforeLines[beforeIdx + i],
+            afterIdx + i + 1,
+            afterLines[afterIdx + i],
+            language,
+          ),
+        );
+      }
+
+      if (type === 'up') {
+        newTrs.push(
+          buildSkipTr(
+            beforeIdx + expandLines,
+            afterIdx + expandLines,
+            jump - expandLines,
+            skipData.header,
+            expandLines,
+          )
+        );
+      }
+      // Replace the old "skip" row with the new code and (maybe) new skip row.
+      var $skipTr = $(this).closest('tr');
+      $skipTr.replaceWith(newTrs as HTMLElement[]);
+    });
+
+    // Hooks for single-column text selection.
+    // See http://stackoverflow.com/a/27530627/388951 for details.
+    $(el)
+      .on('mousedown', function (e) {
+        var $td = $(e.target).closest('td'),
+          isLeft = $td.is('.before'),
+          isRight = $td.is('.after');
+        if (!isLeft && !isRight) return;
+
+        el.removeClass('selecting-left selecting-right').addClass(
+          'selecting-' + (isLeft ? 'left' : 'right'),
+        );
+      })
+      .on('copy', function (e) {
+        var isLeft = el.is('.selecting-left');
+
+        var sel = window.getSelection()!,
+          range = sel.getRangeAt(0),
+          doc = range.cloneContents(),
+          nodes = doc.querySelectorAll('td.' + (isLeft ? 'before' : 'after')),
+          text = '';
+
+        if (nodes.length === 0) {
+          text = doc.textContent!;
+        } else {
+          [].forEach.call(nodes, function (td: Element, i) {
+            text += (i ? '\n' : '') + td.textContent;
+          });
+        }
+
+        var clipboardData = (e.originalEvent as ClipboardEvent).clipboardData;
+        clipboardData?.setData('text', text);
+        e.preventDefault();
+      });
+  }
+
+  buildView_() {
+    // TODO: is this distinction necessary?
+    const language = this.params.language;
+    const beforeLines = language ? this.beforeLinesHighlighted! : this.beforeLines;
+    const afterLines = language ? this.afterLinesHighlighted! : this.afterLines;
+    const expandLines = this.params.expandLines;
+
+    const $table = $('<table class="diff">');
+    $table.append(
+      $('<tr>').append(
+        $('<th class="diff-header" colspan=2>').text(this.params.beforeName),
+        $('<th class="diff-header" colspan=2>').text(this.params.afterName),
+      ),
+    );
+
+    for (const range of this.diffRanges) {
+      const type = range.type;
+      const numBeforeRows = range.before[1] - range.before[0];
+      const numAfterRows = range.after[1] - range.after[0];
+      const numRows = Math.max(numBeforeRows, numAfterRows);
+
+      if (type == 'skip') {
+        $table.append(buildSkipTr(range.before[0], range.after[0], numRows, range.header ?? null, expandLines));
+      } else {
+        for (let j = 0; j < numRows; j++) {
+          const beforeIdx = j < numBeforeRows ? range.before[0] + j : null;
+          const afterIdx = j < numAfterRows ? range.after[0] + j : null;
+          $table.append(
+            buildRowTr(
+              type,
+              beforeIdx != null ? 1 + beforeIdx : null,
+              beforeIdx != null ? beforeLines[beforeIdx] : undefined,
+              afterIdx != null ? 1 + afterIdx : null,
+              afterIdx != null ? afterLines[afterIdx] : undefined,
+              language,
+            ),
+          );
+        }
+      }
+    }
+
+    if (this.params.wordWrap) {
+      $table.addClass('word-wrap');
+    }
+
+    const $container = $('<div class="diff">');
+    $container.append($table);
+    // Attach event handlers & apply char diffs.
+    this.attachHandlers_($container);
+    return $container.get(0);
+  }
+
+  static buildView(beforeText: string | null, afterText: string | null, userParams: Partial<DiffOptions & PatchOptions>) {
+    const params: DiffOptions & PatchOptions = {...DEFAULT_OPTIONS, ...DEFAULT_PARAMS, ...userParams};
+    const beforeLines = beforeText ? difflib.stringAsLines(beforeText) : [];
+    const afterLines = afterText ? difflib.stringAsLines(afterText) : [];
+    const sm = new difflib.SequenceMatcher(beforeLines, afterLines);
+    const opcodes = sm.get_opcodes();
+    const diffRanges = addSkips(opcodes, params.contextSize, params.minJumpSize);
+    var d = new differ(beforeText, beforeLines, afterText, afterLines, diffRanges, params);
+    return d.buildView_();
+  }
+
+  static buildViewFromOps(beforeText: string, afterText: string, ops: DiffRange[], params: Partial<PatchOptions>) {
+    const beforeLines = beforeText ? difflib.stringAsLines(beforeText) : [];
+    const afterLines = afterText ? difflib.stringAsLines(afterText) : [];
+    var d = new differ(beforeText, beforeLines, afterText, afterLines, ops, params);
+    return d.buildView_();
+  }
+}
+
+/**
+ * @return Lines marked up with syntax <span>s. The <span>
+ *     tags will be balanced within each line.
+ */
+function highlightText(text: string, language: string): string[] | null {
+  if (text === null) return [];
+
+  // TODO(danvk): look into suppressing highlighting if .relevance is low.
+  const html = hljs.highlight(text, {language, ignoreIllegals: true}).value;
+
+  // Some of the <span>s might cross lines, which won't work for our diff
+  // structure. We convert them to single-line only <spans> here.
+  return distributeSpans(html);
+}
+
+(window as any).codediff = {
+  ...differ,
+  // These are exported for testing
+  distributeSpans_: distributeSpans,
+  simplifyCodes_: simplifyCodes,
+  codesToHtml_: codesToHtml,
+  addCharacterDiffs_: addCharacterDiffs,
+  computeCharacterDiffs_: computeCharacterDiffs,
+  splitIntoWords_: splitIntoWords,
+  guessLanguageUsingFileName,
+  guessLanguageUsingContents,
+  opcodesToDiffRanges: addSkips,
+  htmlTextMapper,
+  buildView: differ.buildView,
+  buildViewFromOps: differ.buildViewFromOps,
+};
+`;
+
+const ops = [
+  { "type": "skip", "before": [ 0, 12 ], "after": [ 0, 12 ], "header": "import {buildRowTr, buildSkipTr} from './table-utils';" },
+  { "type": "equal", "before": [ 12, 15 ], "after": [ 12, 15 ], "header": null },
+  { "type": "insert", "before": [ 15, 15 ], "after": [ 15, 16 ], "header": null },
+  { "type": "equal", "before": [ 15, 18 ], "after": [ 16, 19 ], "header": null },
+  { "type": "skip", "before": [ 18, 19 ], "after": [ 19, 20 ], "header": "export interface PatchOptions {" },
+  { "type": "equal", "before": [ 19, 22 ], "after": [ 20, 23 ], "header": null },
+  { "type": "insert", "before": [ 22, 22 ], "after": [ 23, 24 ], "header": null },
+  { "type": "equal", "before": [ 22, 23 ], "after": [ 24, 25 ], "header": null },
+  { "type": "insert", "before": [ 23, 23 ], "after": [ 25, 26 ], "header": null },
+  { "type": "equal", "before": [ 23, 24 ], "after": [ 26, 27 ], "header": null },
+  { "type": "insert", "before": [ 24, 24 ], "after": [ 27, 29 ], "header": null },
+  { "type": "equal", "before": [ 24, 26 ], "after": [ 29, 31 ], "header": null },
+  { "type": "insert", "before": [ 26, 26 ], "after": [ 31, 47 ], "header": null },
+  { "type": "equal", "before": [ 26, 29 ], "after": [ 47, 50 ], "header": null },
+  { "type": "skip", "before": [ 29, 39 ], "after": [ 50, 60 ], "header": "export class differ {" },
+  { "type": "equal", "before": [ 39, 42 ], "after": [ 60, 63 ], "header": null },
+  { "type": "replace", "before": [ 42, 51 ], "after": [ 63, 64 ], "header": null },
+  { "type": "equal", "before": [ 51, 54 ], "after": [ 64, 67 ], "header": null },
+  { "type": "skip", "before": [ 54, 70 ], "after": [ 67, 83 ], "header": "export class differ {" },
+  { "type": "equal", "before": [ 70, 73 ], "after": [ 83, 86 ], "header": null },
+  { "type": "replace", "before": [ 73, 77 ], "after": [ 86, 91 ], "header": null },
+  { "type": "equal", "before": [ 77, 78 ], "after": [ 91, 92 ], "header": null },
+  { "type": "replace", "before": [ 78, 84 ], "after": [ 92, 118 ], "header": null },
+  { "type": "equal", "before": [ 84, 87 ], "after": [ 118, 121 ], "header": null },
+  { "type": "skip", "before": [ 87, 93 ], "after": [ 121, 127 ], "header": "export class differ {" },
+  { "type": "equal", "before": [ 93, 96 ], "after": [ 127, 130 ], "header": null },
+  { "type": "replace", "before": [ 96, 97 ], "after": [ 130, 142 ], "header": null },
+  { "type": "equal", "before": [ 97, 100 ], "after": [ 142, 145 ], "header": null },
+  { "type": "skip", "before": [ 100, 136 ], "after": [ 145, 181 ], "header": "export class differ {" },
+  { "type": "equal", "before": [ 136, 139 ], "after": [ 181, 184 ], "header": null },
+  { "type": "replace", "before": [ 139, 142 ], "after": [ 184, 188 ], "header": null },
+  { "type": "equal", "before": [ 142, 143 ], "after": [ 188, 189 ], "header": null },
+  { "type": "replace", "before": [ 143, 144 ], "after": [ 189, 190 ], "header": null },
+  { "type": "equal", "before": [ 144, 147 ], "after": [ 190, 193 ], "header": null },
+  { "type": "skip", "before": [ 147, 148 ], "after": [ 193, 194 ], "header": "export class differ {" },
+  { "type": "equal", "before": [ 148, 151 ], "after": [ 194, 197 ], "header": null },
+  { "type": "replace", "before": [ 151, 157 ], "after": [ 197, 202 ], "header": null },
+  { "type": "equal", "before": [ 157, 159 ], "after": [ 202, 204 ], "header": null },
+  { "type": "replace", "before": [ 159, 160 ], "after": [ 204, 205 ], "header": null },
+  { "type": "equal", "before": [ 160, 161 ], "after": [ 205, 206 ], "header": null },
+  { "type": "replace", "before": [ 161, 164 ], "after": [ 206, 209 ], "header": null },
+  { "type": "equal", "before": [ 164, 167 ], "after": [ 209, 212 ], "header": null },
+  { "type": "skip", "before": [ 167, 179 ], "after": [ 212, 224 ], "header": "export class differ {" },
+  { "type": "equal", "before": [ 179, 182 ], "after": [ 224, 227 ], "header": null },
+  { "type": "replace", "before": [ 182, 183 ], "after": [ 227, 228 ], "header": null },
+  { "type": "equal", "before": [ 183, 186 ], "after": [ 228, 231 ], "header": null },
+  { "type": "skip", "before": [ 186, 187 ], "after": [ 231, 232 ], "header": "export class differ {" },
+  { "type": "equal", "before": [ 187, 190 ], "after": [ 232, 235 ], "header": null },
+  { "type": "replace", "before": [ 190, 191 ], "after": [ 235, 236 ], "header": null },
+  { "type": "equal", "before": [ 191, 194 ], "after": [ 236, 239 ], "header": null },
+  { "type": "skip", "before": [ 194, 241 ], "after": [ 239, 286 ], "header": null },
+];
+
+var diffDiv = $("#diffview").get(0);
+renderDiff(diffDiv, beforeText, afterText, ops);
+</script>
+
+</body>
+</html>

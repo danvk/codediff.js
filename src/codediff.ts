@@ -13,6 +13,7 @@ import {buildRowTr, buildSkipTr} from './table-utils';
 
 export interface PatchOptions {
   minJumpSize: number;
+  expandLines: number;
   language: string | null;
   beforeName: string;
   afterName: string;
@@ -20,9 +21,29 @@ export interface PatchOptions {
 }
 
 export interface DiffOptions {
+  /** Number of equal lines of context to show around changed lines */
   contextSize: number;
+  /** Minimum number of skipped lines to elide into a "jump" row */
   minJumpSize: number;
+  /** Number of additional lines to show when you click an expand arrow. */
+  expandLines: number;
 }
+
+const DEFAULT_OPTIONS: DiffOptions = {
+  contextSize: 3,
+  minJumpSize: 10,
+  expandLines: 10,
+};
+
+const DEFAULT_PARAMS: PatchOptions = {
+  minJumpSize: 10,
+  language: null,
+  beforeName: 'Before',
+  afterName: 'After',
+  wordWrap: false,
+  expandLines: 10,
+};
+
 
 export class differ {
   params: PatchOptions;
@@ -40,15 +61,7 @@ export class differ {
     ops: DiffRange[],
     params: Partial<PatchOptions>
   ) {
-    const defaultParams: PatchOptions = {
-      minJumpSize: 10,
-      language: null,
-      beforeName: 'Before',
-      afterName: 'After',
-      wordWrap: false,
-    };
-
-    this.params = {...defaultParams, ...params};
+    this.params = {...DEFAULT_PARAMS, ...params};
 
     this.beforeLines = beforeLines;
     this.afterLines = afterLines;
@@ -71,17 +84,38 @@ export class differ {
    */
   attachHandlers_(el: JQuery) {
     // TODO: gross duplication with buildView_
-    var language = this.params.language,
-      beforeLines = language ? this.beforeLinesHighlighted! : this.beforeLines,
-      afterLines = language ? this.afterLinesHighlighted! : this.afterLines;
-    $(el).on('click', '.skip a', function (e) {
+    const language = this.params.language;
+    const beforeLines = language ? this.beforeLinesHighlighted! : this.beforeLines;
+    const afterLines = language ? this.afterLinesHighlighted! : this.afterLines;
+    const expandLines = this.params.expandLines;
+    $(el).on('click', '.skip a, span.skip', function (e) {
       e.preventDefault();
-      var skipData = $(this).closest('.skip').data();
-      var beforeIdx = skipData.beforeStartIndex;
-      var afterIdx = skipData.afterStartIndex;
-      var jump = skipData.jumpLength;
-      var newTrs = [];
-      for (var i = 0; i < jump; i++) {
+      const $skip = $(this).closest('.skip');
+      const skipData = $skip.data();
+      let type = $skip.hasClass('expand-down') ? 'down' : $skip.hasClass('expand-up') ? 'up' : 'all';
+      const beforeIdx = skipData.beforeStartIndex;
+      const afterIdx = skipData.afterStartIndex;
+      const jump = skipData.jumpLength;
+      if (jump < expandLines) {
+        type = 'all';
+      }
+      const newTrs = [];
+      const a = type === 'up' || type === 'all' ? 0 : jump - expandLines;
+      const b = type === 'up' ? expandLines : jump;
+
+      if (type === 'down') {
+        newTrs.push(
+          buildSkipTr(
+            beforeIdx,
+            afterIdx,
+            jump - expandLines,
+            skipData.header,
+            expandLines,
+          )
+        );
+      }
+
+      for (let i = a; i < b; i++) {
         newTrs.push(
           buildRowTr(
             'equal',
@@ -94,7 +128,18 @@ export class differ {
         );
       }
 
-      // Replace the "skip" rows with real code.
+      if (type === 'up') {
+        newTrs.push(
+          buildSkipTr(
+            beforeIdx + expandLines,
+            afterIdx + expandLines,
+            jump - expandLines,
+            skipData.header,
+            expandLines,
+          )
+        );
+      }
+      // Replace the old "skip" row with the new code and (maybe) new skip row.
       var $skipTr = $(this).closest('tr');
       $skipTr.replaceWith(newTrs as HTMLElement[]);
     });
@@ -137,11 +182,12 @@ export class differ {
 
   buildView_() {
     // TODO: is this distinction necessary?
-    var language = this.params.language,
-      beforeLines = language ? this.beforeLinesHighlighted! : this.beforeLines,
-      afterLines = language ? this.afterLinesHighlighted! : this.afterLines;
+    const language = this.params.language;
+    const beforeLines = language ? this.beforeLinesHighlighted! : this.beforeLines;
+    const afterLines = language ? this.afterLinesHighlighted! : this.afterLines;
+    const expandLines = this.params.expandLines;
 
-    var $table = $('<table class="diff">');
+    const $table = $('<table class="diff">');
     $table.append(
       $('<tr>').append(
         $('<th class="diff-header" colspan=2>').text(this.params.beforeName),
@@ -149,19 +195,18 @@ export class differ {
       ),
     );
 
-    for (var i = 0; i < this.diffRanges.length; i++) {
-      var range = this.diffRanges[i],
-        type = range.type,
-        numBeforeRows = range.before[1] - range.before[0],
-        numAfterRows = range.after[1] - range.after[0],
-        numRows = Math.max(numBeforeRows, numAfterRows);
+    for (const range of this.diffRanges) {
+      const type = range.type;
+      const numBeforeRows = range.before[1] - range.before[0];
+      const numAfterRows = range.after[1] - range.after[0];
+      const numRows = Math.max(numBeforeRows, numAfterRows);
 
       if (type == 'skip') {
-        $table.append(buildSkipTr(range.before[0], range.after[0], numRows));
+        $table.append(buildSkipTr(range.before[0], range.after[0], numRows, range.header ?? null, expandLines));
       } else {
-        for (var j = 0; j < numRows; j++) {
-          var beforeIdx = j < numBeforeRows ? range.before[0] + j : null,
-            afterIdx = j < numAfterRows ? range.after[0] + j : null;
+        for (let j = 0; j < numRows; j++) {
+          const beforeIdx = j < numBeforeRows ? range.before[0] + j : null;
+          const afterIdx = j < numAfterRows ? range.after[0] + j : null;
           $table.append(
             buildRowTr(
               type,
@@ -180,7 +225,7 @@ export class differ {
       $table.addClass('word-wrap');
     }
 
-    var $container = $('<div class="diff">');
+    const $container = $('<div class="diff">');
     $container.append($table);
     // Attach event handlers & apply char diffs.
     this.attachHandlers_($container);
@@ -188,7 +233,7 @@ export class differ {
   }
 
   static buildView(beforeText: string | null, afterText: string | null, userParams: Partial<DiffOptions & PatchOptions>) {
-    const params: DiffOptions = {contextSize: 3, minJumpSize: 10, wordWrap: false, ...userParams};
+    const params: DiffOptions & PatchOptions = {...DEFAULT_OPTIONS, ...DEFAULT_PARAMS, ...userParams};
     const beforeLines = beforeText ? difflib.stringAsLines(beforeText) : [];
     const afterLines = afterText ? difflib.stringAsLines(afterText) : [];
     const sm = new difflib.SequenceMatcher(beforeLines, afterLines);
@@ -201,7 +246,9 @@ export class differ {
   static buildViewFromOps(beforeText: string, afterText: string, ops: DiffRange[], params: Partial<PatchOptions>) {
     const beforeLines = beforeText ? difflib.stringAsLines(beforeText) : [];
     const afterLines = afterText ? difflib.stringAsLines(afterText) : [];
-    var d = new differ(beforeText, beforeLines, afterText, afterLines, ops, params);
+    const fullParams = {...DEFAULT_PARAMS, ...params};
+    const diffRanges = enforceMinJumpSize(ops, fullParams.minJumpSize);
+    var d = new differ(beforeText, beforeLines, afterText, afterLines, diffRanges, params);
     return d.buildView_();
   }
 }
@@ -220,6 +267,15 @@ function highlightText(text: string, language: string): string[] | null {
   // structure. We convert them to single-line only <spans> here.
   return distributeSpans(html);
 }
+
+/** This removes small skips like "skip 1 line" that are disallowed by minJumpSize. */
+function enforceMinJumpSize(diffs: DiffRange[], minJumpSize: number): DiffRange[] {
+  return diffs.map(d => d.type === 'skip' && d.before[1] - d.before[0] < minJumpSize ? {
+    ...d,
+    type: 'equal',
+  } : d);
+}
+
 
 (window as any).codediff = {
   ...differ,
