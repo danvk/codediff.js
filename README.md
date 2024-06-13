@@ -1,5 +1,6 @@
 # codediff.js
-[![Build Status](https://travis-ci.org/danvk/codediff.js.svg?branch=master)](https://travis-ci.org/danvk/codediff.js)
+
+**⚠️ This repo has been folded into the webdiff monorepo and is no loner maintained. See [webdiff#185](https://github.com/danvk/webdiff/pull/185) ⚠️**
 
 codediff.js is a two-column JavaScript diff visualization with syntax highlighting and character-by-character differences.
 
